@@ -13,6 +13,7 @@ digital output and measure how long it takes to see a change in the
 analog value.  It talks with the *arduino_loopback* program running
 on an Arduino to do this.
 
+# Licence
 Copyright 2015 ReliaSolve.com
 
 Licensed under the Apache License, Version 2.0 (the "License");
