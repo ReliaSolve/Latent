@@ -25,6 +25,8 @@ void Usage(std::string name)
   std::cerr << "       Serial_port: Name of the serial device to use "
             << "to talk to the Arduino.  The Arduino must be running "
             << "the arduino_loopback program." << std::endl;
+  std::cerr << "                    (On windows, something like COM5)" << std::endl;
+  std::cerr << "                    (On mac, something like /dev/tty.usbmodem1411)" << std::endl;
   exit(-1);
 }
 
@@ -43,6 +45,15 @@ int main(int argc, const char *argv[])
     return -2;
   }
 
+  // Make sure we can get a report from the device.  Reports are ASCII
+  // lines with a single number on them, reporting the value in the
+  // Analog0.  They should be between 0 and 1023.
+  // Wait for up to a couple of seconds to start hearing reports from the
+  // device; it resets itself when opened and waits a while to hear if it
+  // should read new firmware.
+
+  // We're done.  Close the port and exit.
+  vrpn_close_commport(port);
   return 0;
 }
 
