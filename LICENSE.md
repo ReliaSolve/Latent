@@ -1,6 +1,3 @@
-This repository holds programs and instructions for building and programming
-a latency test device for virtual-reality (VR) systems.
-
 Copyright 2015 ReliaSolve.com
 
 Licensed under the Apache License, Version 2.0 (the "License");
