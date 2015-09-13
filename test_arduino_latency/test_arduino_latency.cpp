@@ -50,22 +50,18 @@ bool send_msg(int port, unsigned char msg)
   return true;
 }
 
-// Read and parse all pending values from the Arduino on the specified port, or
-// time out and return -1.  If we got at least one number
-// return its value.
-int read_latest_value_or_timeout(int port, struct timeval timeout)
+// Read and parse a single values from the Arduino on the specified port, or
+// time out and return -1.  If we get a value, return it.
+int read_value_or_timeout(int port, struct timeval timeout)
 {
   unsigned char buffer[128];
   unsigned char *bufPtr = buffer;
   int ret = -1; // If we don't get a valid report, return an error.
 
-  // Loop reading a single character until we time out,
-  // then finish reading and parsing the latest report.
-  // The first time through, we use our requested timeout and
-  // later times use a zero timeout to return as soon as we're out
-  // of characters.
+  // Read a single character until we time out,
+  // then finish reading and parsing the report.
   struct timeval myTimeout = timeout;
-  while (vrpn_read_available_characters(port, buffer, 1, &myTimeout) == 1) {
+  if (vrpn_read_available_characters(port, buffer, 1, &myTimeout) == 1) {
     // We're one past the beginning of the buffer
     bufPtr = buffer + 1;
 
@@ -79,14 +75,13 @@ int read_latest_value_or_timeout(int port, struct timeval timeout)
         // Convert from unsigned char buffer pointer to signed
         char *charBuf = static_cast<char *>(static_cast<void *>(buffer));
         ret = atoi(charBuf);
-//  std::cout << " XXX Got value " << ret << " from string of length " << bufPtr - buffer + 1 << std::endl;
         break;
       }
 
       // Don't overrun the end of the buffer.
       bufPtr++;
       if (bufPtr - buffer >= sizeof(buffer)) {
-        std::cerr << "read_latest_value_or_timeout: Full buffer" << std::endl;
+        std::cerr << "read_value_or_timeout: Full buffer" << std::endl;
         return -1;
       }
 
@@ -94,15 +89,8 @@ int read_latest_value_or_timeout(int port, struct timeval timeout)
       // because we're in the middle of a string.
       myTimeout = timeout;
     }
-
-    // Set the timeout value for the next time around to 0, so we
-    // return as soon as we're out of reports.
-    myTimeout.tv_sec = 0;
-    myTimeout.tv_usec = 0;
   }
 
-//  static unsigned XXX = 0;
-//  std::cout << "XXX Read " << ++XXX << " value " << ret << std::endl;
   return ret;
 }
 // Keep reading values until we get one that is below the specified
@@ -118,7 +106,7 @@ bool wait_for_below_threshold(int port, int threshold, struct timeval timeout)
   // timeout from the read), we get a number below threshold, or
   // we take too long.
   do {
-    int val = read_latest_value_or_timeout(port, timeout);
+    int val = read_value_or_timeout(port, timeout);
     if (val < 0) { return false; }
     if (val < threshold) { return true; }
     vrpn_gettimeofday(&now, NULL);
@@ -141,7 +129,7 @@ bool wait_for_above_threshold(int port, int threshold, struct timeval timeout)
   // timeout from the read), we get a number below threshold, or
   // we take too long.
   do {
-    int val = read_latest_value_or_timeout(port, timeout);
+    int val = read_value_or_timeout(port, timeout);
     if (val < 0) { return false; }
     if (val > threshold) { return true; }
     vrpn_gettimeofday(&now, NULL);
