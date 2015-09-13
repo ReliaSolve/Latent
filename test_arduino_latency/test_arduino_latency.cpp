@@ -170,11 +170,14 @@ int main(int argc, const char *argv[])
   }
 
   // Open the specified serial port with baud rate 115200.
+  // Wait a bit and then flush all incoming characters.
   int port = vrpn_open_commport(portName.c_str(), 115200);
   if (port == -1) {
     std::cerr << "Could not open serial port " << portName << std::endl;
     return -2;
   }
+  vrpn_SleepMsecs(10);
+  vrpn_flush_input_buffer(port);
 
   // Make sure we can get a report from the device.  Reports are ASCII
   // lines with a single number on them, reporting the value in the
@@ -263,12 +266,12 @@ int main(int argc, const char *argv[])
   double onSum = 0;
 
   for (size_t i = 0; i < offLatencies.size(); i++) {
-    double offVal = offLatencies[0];
+    double offVal = offLatencies[i];
     offSum += offVal;
     if (offMin > offVal) { offMin = offVal; }
     if (offMax < offVal) { offMax = offVal; }
 
-    double onVal = onLatencies[0];
+    double onVal = onLatencies[i];
     onSum += onVal;
     if (onMin > onVal) { onMin = onVal; }
     if (onMax < onVal) { onMax = onVal; }
