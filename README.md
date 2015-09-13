@@ -1,17 +1,17 @@
 This repository holds programs and instructions for building and programming
 a latency test device for virtual-reality (VR) systems.
 
-*arduino_loopback*:
-Program to run on an Arduino that will loop back the state of digital
-pin 3 and report it as analog 0, presuming that a jumper has been
-installed between the two.  It is meant to operate in combination with
-the *test_arduino_latency* program.
-
 *test_arduino_latency*:
 Program to send commands to the Arduino to toggle the state of the
 digital output and measure how long it takes to see a change in the
 analog value.  It talks with the *arduino_loopback* program running
 on an Arduino to do this.
+
+*test_arduino_latency/arduino_loopback*:
+Program to run on an Arduino that will loop back the state of digital
+pin 3 and report it as analog 0, presuming that a jumper has been
+installed between the two.  It is meant to operate in combination with
+the *test_arduino_latency* program.
 
 # License
 Copyright 2015 ReliaSolve.com
