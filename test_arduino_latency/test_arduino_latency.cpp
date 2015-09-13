@@ -21,6 +21,10 @@ limitations under the License.
 #include <vrpn_Shared.h>
 #include <vrpn_Serial.h>
 
+// Static globals.
+static const unsigned char offMsg = '0';
+static const unsigned char onMsg = '1';
+
 void Usage(std::string name)
 {
   std::cerr << "Usage: " << name << " Serial_port [-count N]" << std::endl;
@@ -31,6 +35,19 @@ void Usage(std::string name)
   std::cerr << "                    (On windows, something like COM5)" << std::endl;
   std::cerr << "                    (On mac, something like /dev/tty.usbmodem1411)" << std::endl;
   exit(-1);
+}
+
+// Set the value to low.
+// Make sure the data is sent.
+// Return true on success, false on failure.
+bool send_msg(int port, unsigned char msg)
+{
+  if (1 != vrpn_write_characters(port, &msg, 1)) {
+    std::cerr << "set_off: Can't write message" << std::endl;
+    return false;
+  }
+  vrpn_drain_output_buffer(port);
+  return true;
 }
 
 // Read and parse all pending values from the Arduino on the specified port, or
@@ -179,6 +196,12 @@ int main(int argc, const char *argv[])
   vrpn_SleepMsecs(10);
   vrpn_flush_input_buffer(port);
 
+  // Set the value to low, in case it was left high.
+  if (!send_msg(port, offMsg)) {
+    std::cerr << "Error: Can't write initial off message" << std::endl;
+    return -11;
+  }
+
   // Make sure we can get a report from the device.  Reports are ASCII
   // lines with a single number on them, reporting the value in the
   // Analog0.  They should be between 0 and 1023.
@@ -213,13 +236,11 @@ int main(int argc, const char *argv[])
     // Make sure the data is sent.
     struct timeval beforeChange;
     vrpn_gettimeofday(&beforeChange, NULL);
-    const unsigned char onMsg = '1';
-    if (1 != vrpn_write_characters(port, &onMsg, 1)) {
+    if (!send_msg(port, onMsg)) {
       std::cerr << "Error: Can't write on message, iteration "
         << i << std::endl;
       return -4;
     }
-    vrpn_drain_output_buffer(port);
 
     // Wait until the value is higher than the threshold, or timeout.
     // and then compute the latency.
@@ -236,13 +257,11 @@ int main(int argc, const char *argv[])
     // Record the time and then request to lower the binary value.
     // Make sure the data is sent.
     vrpn_gettimeofday(&beforeChange, NULL);
-    const unsigned char offMsg = '0';
-    if (1 != vrpn_write_characters(port, &offMsg, 1)) {
+    if (!send_msg(port, offMsg)) {
       std::cerr << "Error: Can't write off message, iteration "
         << i << std::endl;
       return -6;
     }
-    vrpn_drain_output_buffer(port);
 
     // Wait until the value is lower than the threshold, or timeout.
     // and then compute the latency.
