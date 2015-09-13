@@ -62,7 +62,7 @@ int read_latest_value_or_timeout(int port, struct timeval timeout)
         // Convert from unsigned char buffer pointer to signed
         char *charBuf = static_cast<char *>(static_cast<void *>(buffer));
         ret = atoi(charBuf);
-  std::cout << " XXX Got value " << ret << " from string of length " << bufPtr - buffer + 1 << std::endl;
+//  std::cout << " XXX Got value " << ret << " from string of length " << bufPtr - buffer + 1 << std::endl;
         break;
       }
 
@@ -84,8 +84,8 @@ int read_latest_value_or_timeout(int port, struct timeval timeout)
     myTimeout.tv_usec = 0;
   }
 
-  static unsigned XXX = 0;
-  std::cout << "XXX Read " << ++XXX << " value " << ret << std::endl;
+//  static unsigned XXX = 0;
+//  std::cout << "XXX Read " << ++XXX << " value " << ret << std::endl;
   return ret;
 }
 // Keep reading values until we get one that is below the specified
@@ -210,8 +210,8 @@ int main(int argc, const char *argv[])
     // Make sure the data is sent.
     struct timeval beforeChange;
     vrpn_gettimeofday(&beforeChange, NULL);
-    const unsigned char onMsg[] = "1\n";
-    if (2 != vrpn_write_characters(port, onMsg, 2)) {
+    const unsigned char onMsg = '1';
+    if (1 != vrpn_write_characters(port, &onMsg, 1)) {
       std::cerr << "Error: Can't write on message, iteration "
         << i << std::endl;
       return -4;
@@ -220,7 +220,7 @@ int main(int argc, const char *argv[])
 
     // Wait until the value is higher than the threshold, or timeout.
     // and then compute the latency.
-    timeout.tv_sec = 10; timeout.tv_usec = 0;
+    timeout.tv_sec = 1; timeout.tv_usec = 0;
     if (!wait_for_above_threshold(port, THRESHOLD, timeout)) {
       std::cerr << "Error: Timeout waiting for above threshold, iteration "
         << i << std::endl;
@@ -233,8 +233,8 @@ int main(int argc, const char *argv[])
     // Record the time and then request to lower the binary value.
     // Make sure the data is sent.
     vrpn_gettimeofday(&beforeChange, NULL);
-    const unsigned char offMsg[] = "0\n";
-    if (2 != vrpn_write_characters(port, offMsg, 2)) {
+    const unsigned char offMsg = '0';
+    if (1 != vrpn_write_characters(port, &offMsg, 1)) {
       std::cerr << "Error: Can't write off message, iteration "
         << i << std::endl;
       return -6;
