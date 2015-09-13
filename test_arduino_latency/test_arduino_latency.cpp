@@ -38,7 +38,6 @@ void Usage(std::string name)
 }
 
 // Set the value to low.
-// Make sure the data is sent.
 // Return true on success, false on failure.
 bool send_msg(int port, unsigned char msg)
 {
@@ -46,6 +45,7 @@ bool send_msg(int port, unsigned char msg)
     std::cerr << "set_off: Can't write message" << std::endl;
     return false;
   }
+// Make sure the data is sent right away before going on
   vrpn_drain_output_buffer(port);
   return true;
 }
@@ -96,6 +96,8 @@ int read_value_or_timeout(int port, struct timeval timeout)
 // Keep reading values until we get one that is below the specified
 // threshold or take too long to get this result.  If we took too long,
 // then return false.
+// NOTE: When waiting for the value to drop below a threshold of 512,
+// the first value below threshold was 23 (min of 0), so we're doing well.
 bool wait_for_below_threshold(int port, int threshold, struct timeval timeout)
 {
   struct timeval start, end, now;
@@ -119,6 +121,8 @@ bool wait_for_below_threshold(int port, int threshold, struct timeval timeout)
 // Keep reading values until we get one that is above the specified
 // threshold or take too long to get this result.  If we took too long,
 // then return false.
+// NOTE: When waiting for the value to come above a threshold of 512,
+// the first value above threshold was 1023 (the max), so we're doing well.
 bool wait_for_above_threshold(int port, int threshold, struct timeval timeout)
 {
   struct timeval start, end, now;
@@ -176,6 +180,8 @@ int main(int argc, const char *argv[])
 
   // Open the specified serial port with baud rate 115200.
   // Wait a bit and then flush all incoming characters.
+  // NOTE: Changing the baud rate to 9600 changed the latency
+  // from around 4ms to around 75ms.
   int port = vrpn_open_commport(portName.c_str(), 115200);
   if (port == -1) {
     std::cerr << "Could not open serial port " << portName << std::endl;
@@ -197,11 +203,10 @@ int main(int argc, const char *argv[])
   // device; it resets itself when opened and waits a while to hear if it
   // should read new firmware.
   struct timeval timeout;
-  timeout.tv_sec = 3;
-  timeout.tv_usec = 0;
+  timeout.tv_sec = 3; timeout.tv_usec = 0;
   if (!wait_for_below_threshold(port, THRESHOLD, timeout)) {
-    std::cerr << "Error: Timeout waiting for initial report" << std::endl;
-    return -10;
+    std::cerr << "Error: Timeout waiting for initial reading" << std::endl;
+    return -12;
   }
 
   // Run through the specified number of iterations.  For each one, let the
@@ -212,16 +217,16 @@ int main(int argc, const char *argv[])
   std::vector<double> onLatencies;
   std::vector<double> offLatencies;
   for (int i = 0; i < count; i++) {
-    // Wait until the value is lower than the threshold, or timeout.
-    timeout.tv_sec = 1; timeout.tv_usec = 0;
-    if (!wait_for_below_threshold(port, THRESHOLD, timeout)) {
-      std::cerr << "Error: Timeout waiting for below threshold, iteration "
-        << i << std::endl;
-      return -3;
-    }
+
+    // Gobble up all reports in the buffer.
+    // NOTE: This gobbling didn't have an impact on latency
+    timeout.tv_sec = 0; timeout.tv_usec = 0;
+    while (read_value_or_timeout(port, timeout) != -1) { }
 
     // Record the time and then request to raise the binary value.
     // Make sure the data is sent.
+    // NOTE: Doing the time stamp after the send only changed the
+    // latency by about 0.1ms.
     struct timeval beforeChange;
     vrpn_gettimeofday(&beforeChange, NULL);
     if (!send_msg(port, onMsg)) {
@@ -241,6 +246,11 @@ int main(int argc, const char *argv[])
     struct timeval now;
     vrpn_gettimeofday(&now, NULL);
     onLatencies.push_back(vrpn_TimevalDurationSeconds(now, beforeChange));
+
+    // Gobble up all reports in the buffer.
+    // NOTE: This gobbling didn't have an impact on latency
+    timeout.tv_sec = 0; timeout.tv_usec = 0;
+    while (read_value_or_timeout(port, timeout) != -1) { }
 
     // Record the time and then request to lower the binary value.
     // Make sure the data is sent.
