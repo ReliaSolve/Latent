@@ -1,6 +1,11 @@
 This repository holds programs and instructions for building and programming
 a latency test device for virtual-reality (VR) systems.
 
+*vr_latency_tester*:
+Programs to test the latency of various VR devices and systems against
+a potentiometer that is read through an Arduino to provide a ground-truth,
+low-latency angular measurement.
+
 *test_arduino_latency*:
 Program to send commands to the Arduino to toggle the state of the
 digital output and measure how long it takes to see a change in the
