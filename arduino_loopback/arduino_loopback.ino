@@ -26,9 +26,9 @@ limitations under the License.
 // and see how long it takes to get a change.  This tests the entire pipeline
 // through the system, including any delays due to filter on the analog input.
 
-// INPUT: (optional) An ASCII 0 or 1 followed by a carriage return.  A 0
+// INPUT: (optional) An ASCII 0 or 1.  A 0
 // will cause the digital output to go low (its default state).  A 1 will
-// cause it to go high.
+// cause it to go high.  There should be no newline after the character.
 
 // OUTPUT: Streaming lines.  Each line consists of:
 //   An ASCII analog value from Analog0
@@ -66,8 +66,8 @@ void readAndParseInput()
   // send a number greater than 0 or low if they send 0 (or
   // something we can't parse).
   while (Serial.available() > 0) {
-    int value = Serial.parseInt();
-    if (value > 0) {
+    char value = Serial.read();
+    if (value != '0') {
       digitalWrite(3, HIGH);
     } else {
       digitalWrite(3, LOW);
