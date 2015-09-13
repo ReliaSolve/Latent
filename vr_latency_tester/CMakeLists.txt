@@ -32,10 +32,12 @@ include_directories({$VRPN_INCLUDE_DIRS})
 add_library(DeviceThread
     DeviceThread.cpp
     DeviceThread.h
+    DeviceThreadVRPNAnalog.cpp
+    DeviceThreadVRPNAnalog.h
 )
 target_link_libraries(DeviceThread ${VRPN_LIBRARY})
 
-add_executable(vrpn_tracker_latency_test vrpn_tracker_latency_test.cpp)
-target_link_libraries(vrpn_tracker_latency_test DeviceThread)
-install(TARGETS vrpn_tracker_latency_test DESTINATION bin)
+add_executable(vrpn_analog_latency_test vrpn_analog_latency_test.cpp)
+target_link_libraries(vrpn_analog_latency_test DeviceThread)
+install(TARGETS vrpn_analog_latency_test DESTINATION bin)
 

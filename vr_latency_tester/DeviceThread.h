@@ -110,6 +110,5 @@ class DeviceThread {
       std::vector<double> values        //< Values to report
       , struct timeval sampleTime = NOW //< When the measurement was taken, if known
     );
-
 };
 
