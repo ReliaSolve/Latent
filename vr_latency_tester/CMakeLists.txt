@@ -35,9 +35,13 @@ add_library(DeviceThread
     DeviceThreadVRPNAnalog.cpp
     DeviceThreadVRPNAnalog.h
 )
-target_link_libraries(DeviceThread ${VRPN_LIBRARY})
+target_link_libraries(DeviceThread
+  ${VRPN_SERVER_LIBRARIES}
+)
 
 add_executable(vrpn_analog_latency_test vrpn_analog_latency_test.cpp)
-target_link_libraries(vrpn_analog_latency_test DeviceThread)
+target_link_libraries(vrpn_analog_latency_test
+  DeviceThread
+)
 install(TARGETS vrpn_analog_latency_test DESTINATION bin)
 
