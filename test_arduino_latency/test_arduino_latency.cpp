@@ -28,7 +28,7 @@ static const unsigned char onMsg = '1';
 void Usage(std::string name)
 {
   std::cerr << "Usage: " << name << " Serial_port [-count N]" << std::endl;
-  std::cerr << "       -count: Repeat the test N times (default 10)" << std::endl;
+  std::cerr << "       -count: Repeat the test N times (default 100)" << std::endl;
   std::cerr << "       Serial_port: Name of the serial device to use "
             << "to talk to the Arduino.  The Arduino must be running "
             << "the arduino_loopback program." << std::endl;
@@ -97,7 +97,8 @@ int read_value_or_timeout(int port, struct timeval timeout)
 // threshold or take too long to get this result.  If we took too long,
 // then return false.
 // NOTE: When waiting for the value to drop below a threshold of 512,
-// the first value below threshold was 23 (min of 0), so we're doing well.
+// the first value below threshold was 23 (min of 0), so the analog
+// input on the Arduino does not have a slow response.
 bool wait_for_below_threshold(int port, int threshold, struct timeval timeout)
 {
   struct timeval start, end, now;
@@ -122,7 +123,8 @@ bool wait_for_below_threshold(int port, int threshold, struct timeval timeout)
 // threshold or take too long to get this result.  If we took too long,
 // then return false.
 // NOTE: When waiting for the value to come above a threshold of 512,
-// the first value above threshold was 1023 (the max), so we're doing well.
+// the first value above threshold was 1023 (the max), so the analog
+// input on the Arduino does not have a slow response.
 bool wait_for_above_threshold(int port, int threshold, struct timeval timeout)
 {
   struct timeval start, end, now;
@@ -181,7 +183,7 @@ int main(int argc, const char *argv[])
   // Open the specified serial port with baud rate 115200.
   // Wait a bit and then flush all incoming characters.
   // NOTE: Changing the baud rate to 9600 changed the latency
-  // from around 4ms to around 75ms.
+  // from around 4ms to around 75ms. (on a mac)
   int port = vrpn_open_commport(portName.c_str(), 115200);
   if (port == -1) {
     std::cerr << "Could not open serial port " << portName << std::endl;
@@ -219,14 +221,14 @@ int main(int argc, const char *argv[])
   for (int i = 0; i < count; i++) {
 
     // Gobble up all reports in the buffer.
-    // NOTE: This gobbling didn't have an impact on latency
+    // NOTE: This gobbling didn't have an impact on latency (on a mac)
     timeout.tv_sec = 0; timeout.tv_usec = 0;
     while (read_value_or_timeout(port, timeout) != -1) { }
 
     // Record the time and then request to raise the binary value.
     // Make sure the data is sent.
     // NOTE: Doing the time stamp after the send only changed the
-    // latency by about 0.1ms.
+    // latency by about 0.1ms. (on a mac)
     struct timeval beforeChange;
     vrpn_gettimeofday(&beforeChange, NULL);
     if (!send_msg(port, onMsg)) {
@@ -248,7 +250,7 @@ int main(int argc, const char *argv[])
     onLatencies.push_back(vrpn_TimevalDurationSeconds(now, beforeChange));
 
     // Gobble up all reports in the buffer.
-    // NOTE: This gobbling didn't have an impact on latency
+    // NOTE: This gobbling didn't have an impact on latency (on a mac)
     timeout.tv_sec = 0; timeout.tv_usec = 0;
     while (read_value_or_timeout(port, timeout) != -1) { }
 
