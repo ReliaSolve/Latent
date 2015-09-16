@@ -25,7 +25,14 @@ list(APPEND CMAKE_MODULE_PATH
 
 # Common libraries that we need
 find_package(VRPN REQUIRED)
-include_directories({$VRPN_INCLUDE_DIRS})
+include_directories(${VRPN_INCLUDE_DIRS})
+set(VRPN_GENERIC_SERVER_LIBS gpsnmea vrpn_atmel)
+
+# Will know to look for the other VRPN libraries in the
+# INSTALL directory if we're using Superbuild.  Otherwise,
+# they will be found in the same place the server library
+# is found.
+link_directories(${CMAKE_INSTALL_PREFIX}/lib)
 
 # The common classes we want for multiple test programs are put
 # into a library.
@@ -37,6 +44,7 @@ add_library(DeviceThread
 )
 target_link_libraries(DeviceThread
   ${VRPN_SERVER_LIBRARIES}
+  ${VRPN_GENERIC_SERVER_LIBS}
 )
 
 add_executable(vrpn_analog_latency_test vrpn_analog_latency_test.cpp)
