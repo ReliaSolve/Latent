@@ -61,8 +61,6 @@ class DeviceThreadVRPNAnalog : public DeviceThread {
     DeviceThreadVRPNAnalog(std::string configFileName,
       std::string deviceName = "Analog0");
 
-    virtual ~DeviceThreadVRPNAnalog();
-
     /// The constructor and destructor handle making and tearing
     /// down the class, so we only need to override the ServiceDevice
     /// parent class.
@@ -73,6 +71,9 @@ class DeviceThreadVRPNAnalog : public DeviceThread {
     vrpn_Analog     *m_server;      //< Server object
     vrpn_Generic_Server_Object  *m_genericServer;   //< Generic server object
     vrpn_Analog_Remote  *m_remote;   //< Remote object
+
+    // Closes the devices after the subthread has stopped running
+    bool CloseDevice();
 
     /// Callback handler to get reports from the vrpn_Analog and
     /// pass them on up to the DeviceThread.

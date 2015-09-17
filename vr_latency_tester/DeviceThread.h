@@ -76,6 +76,8 @@ class DeviceThread {
     /// Any device-closing code that should run when the thread
     /// is ending that should not happen in the destructor after
     /// the thread is stopped.
+    /// @todo But this will be called from the base-class destructor,
+    /// after the child class has been destroyed....
     virtual bool CloseDevice() { return true; }
 
   protected:

@@ -16,6 +16,7 @@
 
 #include "DeviceThreadVRPNAnalog.h"
 #include <string>
+#include <iostream>
 
 DeviceThreadVRPNAnalog::DeviceThreadVRPNAnalog(DeviceThreadAnalogCreator deviceMaker)
 {
@@ -33,7 +34,10 @@ DeviceThreadVRPNAnalog::DeviceThreadVRPNAnalog(DeviceThreadAnalogCreator deviceM
   if (!m_connection || !m_server || !m_remote) {
     delete m_remote; m_remote = nullptr;
     delete m_server; m_server = nullptr;
-    delete m_connection; m_connection = nullptr;
+    if (m_connection) {
+      m_connection->removeReference();
+      m_connection = nullptr;
+    }
     m_broken = true;
     return;
   }
@@ -56,12 +60,21 @@ DeviceThreadVRPNAnalog::DeviceThreadVRPNAnalog(std::string configFileName,
   // Construct the generic server object and client object, having them
   // use the connection and the same name.
   m_genericServer = new vrpn_Generic_Server_Object(m_connection,
-    configFileName.c_str());
+    configFileName.c_str(), true);
+  if (!m_genericServer->doing_okay()) {
+    m_broken = true;
+    delete m_genericServer; m_genericServer = nullptr;
+    m_connection->removeReference();
+    return;
+  }
   m_remote = new vrpn_Analog_Remote(deviceName.c_str(), m_connection);
-  if (!m_connection || !m_server || !m_remote) {
+  if (!m_connection || !m_genericServer || !m_remote) {
     delete m_remote; m_remote = nullptr;
     delete m_genericServer; m_genericServer = nullptr;
-    delete m_connection; m_connection = nullptr;
+    if (m_connection) {
+      m_connection->removeReference();
+      m_connection = nullptr;
+    }
     m_broken = true;
     return;
   }
@@ -72,15 +85,23 @@ DeviceThreadVRPNAnalog::DeviceThreadVRPNAnalog(std::string configFileName,
   m_remote->register_change_handler(this, HandleAnalogCallback);
 }
 
-DeviceThreadVRPNAnalog::~DeviceThreadVRPNAnalog()
+// We do this here rather than the destructor because we need to
+// make sure the thread has stopped calling our object callbacks
+// and Service function.
+bool DeviceThreadVRPNAnalog::CloseDevice()
 {
+// @todo Won't this be called after the destructor?
+std::cout << "XXX Closing DeviceThreadVRPNAnalog" << std::endl;
     if (m_remote) {
       m_remote->unregister_change_handler(this, HandleAnalogCallback);
     }
     delete m_remote; m_remote = nullptr;
     delete m_server; m_server = nullptr;
     delete m_genericServer; m_genericServer = nullptr;
-    delete m_connection; m_connection = nullptr;
+    if (m_connection != nullptr) {
+      m_connection->removeReference();
+    }
+    return true;
 }
 
 bool DeviceThreadVRPNAnalog::ServiceDevice()
@@ -88,7 +109,14 @@ bool DeviceThreadVRPNAnalog::ServiceDevice()
   // We just mainloop() all of our objects here, which will cause
   // callbacks to be delivered with new data.
   if (m_server) { m_server->mainloop(); }
-  if (m_genericServer) { m_genericServer->mainloop(); }
+  if (m_genericServer) {
+    if (!m_genericServer->doing_okay()) {
+      m_broken = true;
+      delete m_genericServer; m_genericServer = nullptr;
+      return false;
+    }
+    m_genericServer->mainloop();
+  }
   if (m_connection) { m_connection->mainloop(); }
   if (m_remote) { m_remote->mainloop(); }
   return true;

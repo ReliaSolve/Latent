@@ -28,7 +28,7 @@ int g_arduinoChannel = 0;
 
 void Usage(std::string name)
 {
-  std::cerr << "Usage: " << name << " Arduino_serial_port Arduino_channel Analog_config_file Analod_channel [-count N]" << std::endl;
+  std::cerr << "Usage: " << name << " Arduino_serial_port Arduino_channel Analog_config_file Analog_channel [-count N]" << std::endl;
   std::cerr << "       -count: Repeat the test N times (default 100)" << std::endl;
   std::cerr << "       Arduino_serial_port: Name of the serial device to use "
             << "to talk to the Arduino.  The Arduino must be running "
@@ -104,6 +104,15 @@ int main(int argc, const char *argv[])
 
   // Measure and report the average update rates of each device.
   // @todo
+
+  // @todo Remove wait
+  struct timeval start, now;
+  vrpn_gettimeofday(&start, nullptr);
+  std::cout << "XXX Waiting a bit" << std::endl;
+  do {
+    vrpn_SleepMsecs(1);
+    vrpn_gettimeofday(&now, nullptr);
+  } while (vrpn_TimevalDurationSeconds(now, start) < 10);
 
   // We're done.  Shut down the threads and exit.
   return 0;
