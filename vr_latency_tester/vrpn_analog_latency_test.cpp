@@ -102,17 +102,67 @@ int main(int argc, const char *argv[])
   // reading from the Analog.
   DeviceThreadVRPNAnalog  analog(analogConfigFileName);
 
-  // Measure and report the average update rates of each device.
-  // @todo
-
-  // @todo Remove wait
+  // Wait until we get at least one report from each device
+  // or timeout.  Make sure the report sizes match what we
+  // need.
   struct timeval start, now;
   vrpn_gettimeofday(&start, nullptr);
-  std::cout << "XXX Waiting a bit" << std::endl;
+  size_t arduinoCount = 0;
+  size_t analogCount = 0;
+  std::vector<DeviceThreadReport> r;
   do {
-    vrpn_SleepMsecs(1);
+    r = arduino.GetReports();
+    if (r.size() > 0) {
+      if (r[0].values.size() <= g_arduinoChannel) {
+        std::cerr << "Report size from Arduino: " << r[0].values.size()
+          << " is too small for requested channel: " << g_arduinoChannel << std::endl;
+        return -2;
+      }
+    }
+    arduinoCount += r.size();
+
+    r = analog.GetReports();
+    if (r.size() > 0) {
+      if (r[0].values.size() <= analogChannel) {
+        std::cerr << "Report size from Analog: " << r[0].values.size()
+          << " is too small for requested channel: " << analogChannel << std::endl;
+        return -2;
+      }
+    }
+    analogCount += r.size();
+
     vrpn_gettimeofday(&now, nullptr);
-  } while (vrpn_TimevalDurationSeconds(now, start) < 2);
+  } while ( ((arduinoCount == 0) || (analogCount == 0))
+            && (vrpn_TimevalDurationSeconds(now, start) < 5) );
+  if (arduinoCount == 0) {
+    std::cerr << "No reports from Arduino" << std::endl;
+    return -3;
+  }
+  if (analogCount == 0) {
+    std::cerr << "No reports from Analog" << std::endl;
+    return -4;
+  }
+
+  // Measure and report the average update rates of each device
+  // and make sure we have enough channels from each device.
+  std::cout << "Estimating device update rates:" << std::endl;
+  // Start by clearing out all available reports so we start fresh
+  arduino.GetReports();
+  analog.GetReports();
+  arduinoCount = 0;
+  analogCount = 0;
+  vrpn_gettimeofday(&start, nullptr);
+  do {
+    arduinoCount += arduino.GetReports().size();
+    analogCount += analog.GetReports().size();
+    vrpn_gettimeofday(&now, nullptr);
+  } while (vrpn_TimevalDurationSeconds(now, start) < 3);
+  double arduinoRPS = arduinoCount / vrpn_TimevalDurationSeconds(now, start);
+  double analogRPS = analogCount / vrpn_TimevalDurationSeconds(now, start);
+  std::cout << "  Arduino reports/second: " << arduinoRPS << std::endl;
+  std::cout << "  Analog reports/second: " << analogRPS << std::endl;
+
+  // @todo
 
   // We're done.  Shut down the threads and exit.
   return 0;
