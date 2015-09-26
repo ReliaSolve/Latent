@@ -112,7 +112,7 @@ int main(int argc, const char *argv[])
   do {
     vrpn_SleepMsecs(1);
     vrpn_gettimeofday(&now, nullptr);
-  } while (vrpn_TimevalDurationSeconds(now, start) < 10);
+  } while (vrpn_TimevalDurationSeconds(now, start) < 2);
 
   // We're done.  Shut down the threads and exit.
   return 0;

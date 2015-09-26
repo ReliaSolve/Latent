@@ -61,6 +61,8 @@ class DeviceThreadVRPNAnalog : public DeviceThread {
     DeviceThreadVRPNAnalog(std::string configFileName,
       std::string deviceName = "Analog0");
 
+    ~DeviceThreadVRPNAnalog();
+
     /// The constructor and destructor handle making and tearing
     /// down the class, so we only need to override the ServiceDevice
     /// parent class.

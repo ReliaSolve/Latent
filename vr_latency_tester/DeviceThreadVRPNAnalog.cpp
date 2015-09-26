@@ -85,13 +85,26 @@ DeviceThreadVRPNAnalog::DeviceThreadVRPNAnalog(std::string configFileName,
   m_remote->register_change_handler(this, HandleAnalogCallback);
 }
 
+DeviceThreadVRPNAnalog::~DeviceThreadVRPNAnalog()
+{
+  // Tell our thread it is time to stop running by grabbing its
+  // semaphore.  Wait until it has stopped and then release the
+  // semaphore again, because the base-class destructor will
+  // also be doing this.
+  // This will cause the CloseDevice() call below to be called,
+  // cleaning up after ourselves.
+  m_quit.p();
+  while (m_thread->running()) {
+    vrpn_SleepMsecs(1);
+  }
+  m_quit.v();
+}
+
 // We do this here rather than the destructor because we need to
 // make sure the thread has stopped calling our object callbacks
 // and Service function.
 bool DeviceThreadVRPNAnalog::CloseDevice()
 {
-// @todo Won't this be called after the destructor?
-std::cout << "XXX Closing DeviceThreadVRPNAnalog" << std::endl;
     if (m_remote) {
       m_remote->unregister_change_handler(this, HandleAnalogCallback);
     }
