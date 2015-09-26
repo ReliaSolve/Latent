@@ -9,7 +9,7 @@ set(cmake_common_args
 
 ExternalProject_Add(
   vrpn
-  DOWNLOAD_COMMAND git clone git://github.com/vrpn/vrpn
+  GIT_REPOSITORY git://github.com/vrpn/vrpn
   CMAKE_ARGS
     ${cmake_common_args}
     -DVRPN_BUILD_CLIENTS:BOOL=OFF
