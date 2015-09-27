@@ -27,11 +27,19 @@ DeviceThread::DeviceThread()
   td.pvUD = this;
   m_thread = new vrpn_Thread(ThreadToRun, td);
   m_broken = false; // Not broken yet.
+}
+
+DeviceThread::~DeviceThread()
+{
+}
+
+void DeviceThread::StartThread()
+{
   m_thread->go();
   while (!m_thread->running() && !m_broken) {};
 }
 
-DeviceThread::~DeviceThread()
+void DeviceThread::StopThread()
 {
   // Tell our thread it is time to stop running by grabbing its
   // semaphore.  Wait until it has stopped and then delete it.

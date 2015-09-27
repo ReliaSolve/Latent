@@ -46,6 +46,9 @@ DeviceThreadVRPNAnalog::DeviceThreadVRPNAnalog(DeviceThreadAnalogCreator deviceM
   // function that handles pushing the reports onto the vector of
   // reports, giving it a pointer to this class instance.
   m_remote->register_change_handler(this, HandleAnalogCallback);
+
+  // Start our thread running
+  StartThread();
 }
 
 DeviceThreadVRPNAnalog::DeviceThreadVRPNAnalog(std::string configFileName,
@@ -83,21 +86,17 @@ DeviceThreadVRPNAnalog::DeviceThreadVRPNAnalog(std::string configFileName,
   // function that handles pushing the reports onto the vector of
   // reports, giving it a pointer to this class instance.
   m_remote->register_change_handler(this, HandleAnalogCallback);
+
+  // Start our thread running
+  StartThread();
 }
 
 DeviceThreadVRPNAnalog::~DeviceThreadVRPNAnalog()
 {
-  // Tell our thread it is time to stop running by grabbing its
-  // semaphore.  Wait until it has stopped and then release the
-  // semaphore again, because the base-class destructor will
-  // also be doing this.
+  // Tell our thread it is time to stop running.
   // This will cause the CloseDevice() call below to be called,
   // cleaning up after ourselves.
-  m_quit.p();
-  while (m_thread->running()) {
-    vrpn_SleepMsecs(1);
-  }
-  m_quit.v();
+  StopThread();
 }
 
 // We do this here rather than the destructor because we need to

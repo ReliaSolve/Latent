@@ -88,6 +88,11 @@ class DeviceThread {
     static void ThreadToRun(vrpn_ThreadData &threadData);
     bool m_broken;          //< The subthread sets this true if trouble.
 
+    // Used by subclasses in their constructors and destructors
+    // so they are fully operational when they are called.
+    void StartThread();
+    void StopThread();
+
     //=======================================================
     // Data structures and semaphores to handle reporting data back
     // to the client.
