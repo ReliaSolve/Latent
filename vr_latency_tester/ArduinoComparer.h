@@ -18,6 +18,41 @@
 #include <DeviceThread.h>
 #include <vector>
 
+/// Class to keep track of a set of changing values over time.  It is
+/// constructed based on a set of reports, a definition of 0 time, and
+/// an index telling which value to use.  It produces a sorted vector
+/// of values by reading the specified index and then allows lookup
+/// into those values over time, interpolating when between times and
+/// clamping to the ends when beyond the bounds.
+
+class Trajectory {
+  public:
+    Trajectory(
+      std::vector<DeviceThreadReport> &reports  //< Holds the values to fill in
+      , struct timeval start                    //< Defines 0 seconds
+      , int index                               //< Which value to use from the reports
+    );
+
+    /// @brief Look up an interpolated value at specified seconds past start time.
+    /// @param [in] seconds Time in seconds since the start time passed to the constructor.
+    /// @return If seconds is before the beginning of time, returns the value
+    ///   associated with the first entry in the trajectory.  If beyond the
+    ///   end of time, the last.  If there are no entries, returns 0.
+    ///   If the time is between two entries in the list of reports, it will
+    ///   linearly interpolate the value.  If there are multiple entries at the
+    ///   same time, it picks one of them and returns it.
+    double lookup(double seconds);
+
+  protected:
+    class Entry {
+    public:
+      double m_time;
+      double m_value;
+      bool operator < (const Entry &e) const { return m_time < e.m_time; }
+    };
+    std::vector<Entry> m_entries;   //< Sorted list of values from base time.
+};
+
 /// Class to handle comparing sets of Arduino values against other
 /// devices' reported values to estimate the latency between them.
 
@@ -34,9 +69,9 @@ class ArduinoComparer {
     bool addMapping(double arduinoVal, double deviceVal);
 
     /// @brief Fill in any values without entries, telling how many
-    /// @param [out] numInterp How many values had to be interpolated.
+    /// @param [out] outNumInterp How many values had to be interpolated.
     /// @return true on success, false on failure (no entries)
-    bool constructMapping(size_t &numInterp);
+    bool constructMapping(size_t &outNumInterp);
 
     /// @brief Tell the minimum Arduino value mapped.
     size_t minArduinoValue() const { return m_minArduinoValue; }
@@ -62,12 +97,19 @@ class ArduinoComparer {
     bool addDeviceReports(std::vector<DeviceThreadReport> &r);
 
     /// @brief Compute the time shift that produces the best alignment.
+    /// @param [in] arduinoChannel Channel to read values from for the Arduino
+    /// @param [out] analogChannel Channel to read values from for the Analog
     /// @param [out] optimalShiftSeconds Optimal shift in seconds to reduce
     ///   the error between the arduino value and the Device value
     ///   recorded at a particular time.  Temporal interpolation is
-    ///   used to align values not taken at the same instant.
+    ///   used to align values not taken at the same instant.  Positive
+    ///   shift means that the device values were later than the
+    ///   Arduino values, and is what is expected.
     /// @return true if a result was found, false if no reports.
-    
+    bool computeLatency(
+          int arduinoChannel
+          , int analogChannel
+          , double &outLatencySeconds);
 
   protected:
     //=======================================================
@@ -83,5 +125,6 @@ class ArduinoComparer {
     // latency.
     std::vector<DeviceThreadReport> m_arduinoReports;
     std::vector<DeviceThreadReport> m_deviceReports;
+
 };
 

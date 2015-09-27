@@ -15,9 +15,64 @@
 */
 
 #include "ArduinoComparer.h"
+#include <vrpn_Shared.h>
+#include <algorithm>
 #include <iostream>
 
 static size_t ARDUINO_MAX = 1023;
+
+Trajectory::Trajectory(
+      std::vector<DeviceThreadReport> &reports  //< Holds the values to fill in
+      , struct timeval start                    //< Defines 0 seconds
+      , int index                               //< Which value to use from the reports
+)
+{
+  if (index < 0) { return; }
+
+  // Insert all reports that have a value with the specified index.
+  // Their time is with respect to the base time.
+  for (size_t i = 0; i < reports.size(); i++) {
+    if (reports[i].values.size() > index) {
+      Entry e;
+      e.m_value = reports[i].values[index];
+      e.m_time = vrpn_TimevalDurationSeconds(reports[i].sampleTime, start);
+      m_entries.push_back(e);
+    }
+  }
+
+  // Sort the resulting vector of values.
+  std::sort(m_entries.begin(), m_entries.end());
+}
+
+double Trajectory::lookup(double seconds)
+{
+  // Handle the boundary cases.
+  if (m_entries.size() == 0) { return 0; }
+  if (seconds <= m_entries.front().m_time) { return m_entries.front().m_value; }
+  if (seconds >= m_entries.back().m_time) { return m_entries.back().m_value; }
+
+  // Find the first element in the array that is >= the requested time.
+  Entry e;
+  e.m_time = seconds;
+  std::vector<Entry>::const_iterator ge =
+      std::lower_bound(m_entries.begin(), m_entries.end(), e);
+  if (ge->m_time == e.m_time) {
+    // We found an entry with the same time -- return it.
+    return ge->m_value;
+  } else {
+    // We found the first entry greater than the time requested, and we
+    // know that the value is greater than the first entry and less than
+    // the last, so there must be a less-than value right before it.
+    // Do linear interpolation between the previous and found value and
+    // return the result.
+    size_t ge_index = ge - m_entries.begin();
+    size_t previous_index = ge_index - 1;
+    double dT = m_entries[ge_index].m_time - m_entries[previous_index].m_time;
+    double dV = m_entries[ge_index].m_value - m_entries[previous_index].m_value;
+    double frac = (seconds - m_entries[previous_index].m_time) / dT;
+    return m_entries[previous_index].m_value + frac * dV;
+  }
+}
 
 ArduinoComparer::ArduinoComparer()
 {
@@ -49,7 +104,7 @@ bool ArduinoComparer::addMapping(double arduinoVal, double deviceVal)
   return true;
 }
 
-bool ArduinoComparer::constructMapping(size_t &numInterp)
+bool ArduinoComparer::constructMapping(size_t &outNumInterp)
 {
   // Make sure we have entries to compute.
   if (m_maxArduinoValue <= m_minArduinoValue) {
@@ -77,7 +132,7 @@ bool ArduinoComparer::constructMapping(size_t &numInterp)
   // them in with an interpolated value from the nearest entries above
   // and below them.  Keep track of how many we filled in so we can
   // report it.
-  numInterp = 0;
+  outNumInterp = 0;
   for (size_t i = m_minArduinoValue+1; i < m_maxArduinoValue; i++) {
     if (m_mappingVector[i].size() == 0) {
 
@@ -97,7 +152,7 @@ bool ArduinoComparer::constructMapping(size_t &numInterp)
       double diffVal = m_mappingMean[nextVal] - baseVal;
       for (size_t j = i; j < nextVal; j++) {
         m_mappingMean[j] = baseVal + (j-base)/gap * diffVal;
-        numInterp++;
+        outNumInterp++;
       }
     }
   }
@@ -140,5 +195,20 @@ bool ArduinoComparer::addDeviceReports(std::vector<DeviceThreadReport> &r)
 
   m_deviceReports.insert(m_deviceReports.end(), r.begin(), r.end());
   return true;
+}
+
+bool ArduinoComparer::computeLatency(
+          int arduinoChannel
+          , int analogChannel
+          , double &outLatencySeconds)
+{
+  // Bogus value in case we have to bail.
+  outLatencySeconds = -10e10;
+  if ( (m_deviceReports.size() == 0) || (m_arduinoReports.size() == 0) ) {
+    return false;
+  }
+
+
+//  return true;
 }
 
