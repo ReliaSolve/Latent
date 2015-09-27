@@ -122,9 +122,9 @@ int main(int argc, const char *argv[])
           << " is too small for requested channel: " << g_arduinoChannel << std::endl;
         return -2;
       }
+      lastArduinoValue = r.back().values[g_arduinoChannel];
     }
     arduinoCount += r.size();
-    lastArduinoValue = r.back().values[g_arduinoChannel];
 
     r = analog.GetReports();
     if (r.size() > 0) {
@@ -133,9 +133,9 @@ int main(int argc, const char *argv[])
           << " is too small for requested channel: " << analogChannel << std::endl;
         return -2;
       }
+      lastAnalogValue = r.back().values[analogChannel];
     }
     analogCount += r.size();
-    lastAnalogValue = r.back().values[analogChannel];
 
     vrpn_gettimeofday(&now, nullptr);
   } while ( ((arduinoCount == 0) || (analogCount == 0))
