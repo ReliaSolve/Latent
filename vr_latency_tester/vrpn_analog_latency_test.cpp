@@ -157,8 +157,8 @@ int main(int argc, const char *argv[])
   // Every time we get a new Ardiuno report, we add the stored
   // Analog value to its vector of associated values.  We
   // continue until we have rotated left and right at least
-  // four times.
-  size_t REQUIRED_PASSES = 4;
+  // the required number of times.
+  size_t REQUIRED_PASSES = 3;
   int TURN_AROUND_THRESHOLD = 7;
   std::cout << "Producing mapping between devices:" << std::endl;
   std::cout << "  (Rotate slowly left and right " << REQUIRED_PASSES
@@ -184,7 +184,8 @@ int main(int argc, const char *argv[])
   double lastExtremum = lastArduinoValue;
   size_t numTurns = 0;
   do {
-    double thisArduinoValue;
+    // Fill in a default value in case we get no reports.
+    double thisArduinoValue = lastArduinoValue;
 
     // Find the new value for the Arduino and the Analog, if any.
     r = arduino.GetReports();
@@ -206,20 +207,25 @@ int main(int argc, const char *argv[])
       // See if we have turned around.  If we're going in the same direction
       // we were, we adjust the extremum.  If the opposite, we see if we've
       // gone past the threshold and turn around if so.
-      int direction = 1;
-      if (thisArduinoValue < lastArduinoValue) { direction = -1; }
-      if (direction * lastDirection > 0) {
+      double offset = thisArduinoValue - lastExtremum;
+      if (offset * lastDirection > 0) {
+
+        // Going in the same direction, keep moving the extremum value to
+        // keep up with how far we have gone.
         lastExtremum = thisArduinoValue;
       } else if (fabs(thisArduinoValue - lastExtremum) > TURN_AROUND_THRESHOLD) {
-        lastDirection = direction;
+
+        // We went in the opposite direction from our overall motion and
+        // moved past the threshold.
+        lastDirection *= -1;
         lastExtremum = thisArduinoValue;
+        std::cout << "  Turned around at value " << lastExtremum << std::endl;
         numTurns++;
       }
 
       // Store the new value for future tests.
       lastArduinoValue = thisArduinoValue;
     }    
-
   } while (numTurns < requiredTurns);
 
   // @todo
