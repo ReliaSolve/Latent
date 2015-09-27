@@ -15,6 +15,7 @@
 */
 
 #include <stdlib.h>
+#include <cmath>
 #include <string>
 #include <iostream>
 #include <vector>
@@ -102,14 +103,17 @@ int main(int argc, const char *argv[])
   // reading from the Analog.
   DeviceThreadVRPNAnalog  analog(analogConfigFileName);
 
+  //-----------------------------------------------------------------
   // Wait until we get at least one report from each device
-  // or timeout.  Make sure the report sizes match what we
-  // need.
+  // or timeout.  Make sure the report sizes are large enough
+  // to support the channels we're reading.
   struct timeval start, now;
   vrpn_gettimeofday(&start, nullptr);
   size_t arduinoCount = 0;
   size_t analogCount = 0;
   std::vector<DeviceThreadReport> r;
+  std::cout << "Waiting for reports from all devices (you may need to move them):" << std::endl;
+  double lastArduinoValue, lastAnalogValue;
   do {
     r = arduino.GetReports();
     if (r.size() > 0) {
@@ -120,6 +124,7 @@ int main(int argc, const char *argv[])
       }
     }
     arduinoCount += r.size();
+    lastArduinoValue = r.back().values[g_arduinoChannel];
 
     r = analog.GetReports();
     if (r.size() > 0) {
@@ -130,10 +135,11 @@ int main(int argc, const char *argv[])
       }
     }
     analogCount += r.size();
+    lastAnalogValue = r.back().values[analogChannel];
 
     vrpn_gettimeofday(&now, nullptr);
   } while ( ((arduinoCount == 0) || (analogCount == 0))
-            && (vrpn_TimevalDurationSeconds(now, start) < 5) );
+            && (vrpn_TimevalDurationSeconds(now, start) < 20) );
   if (arduinoCount == 0) {
     std::cerr << "No reports from Arduino" << std::endl;
     return -3;
@@ -143,24 +149,78 @@ int main(int argc, const char *argv[])
     return -4;
   }
 
-  // Measure and report the average update rates of each device
-  // and make sure we have enough channels from each device.
-  std::cout << "Estimating device update rates:" << std::endl;
-  // Start by clearing out all available reports so we start fresh
+  //-----------------------------------------------------------------
+  // Produce the slow-motion mapping between the two devices.
+  // Keep track of the latest reported value from the analog at
+  // all times and assign this value to the vector of entries
+  // for each possible value for the Arduino report (0-1023).
+  // Every time we get a new Ardiuno report, we add the stored
+  // Analog value to its vector of associated values.  We
+  // continue until we have rotated left and right at least
+  // four times.
+  size_t REQUIRED_PASSES = 4;
+  int TURN_AROUND_THRESHOLD = 7;
+  std::cout << "Producing mapping between devices:" << std::endl;
+  std::cout << "  (Rotate slowly left and right " << REQUIRED_PASSES
+    << " times)" << std::endl;
+
+  // Construct a vector of vectors to store the values associated with
+  // each value from the Arduino.  The Arduino can take values from
+  // 0 to 1023.
+  std::vector<double> emptyVec;
+  std::vector<std::vector<double> > arduinoVecs;
+  for (size_t i = 0; i < 1024; i++) {
+    arduinoVecs.push_back(emptyVec);
+  }
+
+  // Clear out all available reports so we start fresh
   arduino.GetReports();
   analog.GetReports();
-  arduinoCount = 0;
-  analogCount = 0;
-  vrpn_gettimeofday(&start, nullptr);
+
+  // Keep shoveling values into the vectors until they have turned
+  // around at least 8 times (four up, four down)
+  size_t requiredTurns = 2 * REQUIRED_PASSES;
+  int lastDirection = 1;  //< 1 for going up, -1 for going down  
+  double lastExtremum = lastArduinoValue;
+  size_t numTurns = 0;
   do {
-    arduinoCount += arduino.GetReports().size();
-    analogCount += analog.GetReports().size();
-    vrpn_gettimeofday(&now, nullptr);
-  } while (vrpn_TimevalDurationSeconds(now, start) < 3);
-  double arduinoRPS = arduinoCount / vrpn_TimevalDurationSeconds(now, start);
-  double analogRPS = analogCount / vrpn_TimevalDurationSeconds(now, start);
-  std::cout << "  Arduino reports/second: " << arduinoRPS << std::endl;
-  std::cout << "  Analog reports/second: " << analogRPS << std::endl;
+    double thisArduinoValue;
+
+    // Find the new value for the Arduino and the Analog, if any.
+    r = arduino.GetReports();
+    if (r.size() > 0) {
+      thisArduinoValue = r.back().values[g_arduinoChannel];
+    }
+    r = analog.GetReports();
+    if (r.size() > 0) {
+      lastAnalogValue = r.back().values[analogChannel];
+    }
+
+    // If we have a new Arduino value, add a new entry into the
+    // appropriate vector and check to see if we've turned around.
+    if (thisArduinoValue != lastArduinoValue) {
+
+      // Add the new value into the appropriate bin.
+      arduinoVecs[static_cast<size_t>(thisArduinoValue)].push_back(lastAnalogValue);
+
+      // See if we have turned around.  If we're going in the same direction
+      // we were, we adjust the extremum.  If the opposite, we see if we've
+      // gone past the threshold and turn around if so.
+      int direction = 1;
+      if (thisArduinoValue < lastArduinoValue) { direction = -1; }
+      if (direction * lastDirection > 0) {
+        lastExtremum = thisArduinoValue;
+      } else if (fabs(thisArduinoValue - lastExtremum) > TURN_AROUND_THRESHOLD) {
+        lastDirection = direction;
+        lastExtremum = thisArduinoValue;
+        numTurns++;
+      }
+
+      // Store the new value for future tests.
+      lastArduinoValue = thisArduinoValue;
+    }    
+
+  } while (numTurns < requiredTurns);
 
   // @todo
 
