@@ -24,6 +24,7 @@
 
 // Global state.
 
+unsigned g_verbosity = 2;       //< Larger numbers are more verbose
 std::string g_arduinoPortName;
 int g_arduinoChannel = 0;
 
@@ -64,7 +65,7 @@ int main(int argc, const char *argv[])
   size_t realParams = 0;
   std::string analogConfigFileName;
   int analogChannel = 0;
-  int count = 20;
+  int count = 10;
   for (size_t i = 1; i < argc; i++) {
     if (argv[i] == std::string("-count")) {
       if (++i > argc) {
@@ -117,7 +118,9 @@ int main(int argc, const char *argv[])
   size_t arduinoCount = 0;
   size_t analogCount = 0;
   std::vector<DeviceThreadReport> r;
-  std::cout << "Waiting for reports from all devices (you may need to move them):" << std::endl;
+  if (g_verbosity > 0) {
+    std::cout << "Waiting for reports from all devices (you may need to move them):" << std::endl;
+  }
   double lastArduinoValue, lastAnalogValue;
   do {
     r = arduino.GetReports();
@@ -163,9 +166,11 @@ int main(int argc, const char *argv[])
   // Analog value to its vector of associated values.  We
   // continue until we have rotated left and right at least
   // the required number of times.
-  std::cout << "Producing mapping between devices:" << std::endl;
-  std::cout << "  (Rotate slowly left and right " << REQUIRED_PASSES
-    << " times)" << std::endl;
+  if (g_verbosity > 0) {
+    std::cout << "Producing mapping between devices:" << std::endl;
+    std::cout << "  (Rotate slowly left and right " << REQUIRED_PASSES
+      << " times)" << std::endl;
+  }
 
   // Construct a vector of vectors to store the values associated with
   // each value from the Arduino.  The Arduino can take values from
@@ -222,7 +227,9 @@ int main(int argc, const char *argv[])
         // moved past the threshold.
         lastDirection *= -1;
         lastExtremum = thisArduinoValue;
-        std::cout << "  Turned around at value " << lastExtremum << std::endl;
+        if (g_verbosity > 1) {
+          std::cout << "  Turned around at value " << lastExtremum << std::endl;
+        }
         numTurns++;
       }
 
@@ -255,10 +262,12 @@ int main(int argc, const char *argv[])
     std::cerr << "Insufficient Arduino measurements" << std::endl;
     return -5;
   }
-  std::cout << "Min Arduino value " << minArduino
-    << " (analog value " << meanAnalogs[minArduino] << ")" << std::endl;
-  std::cout << "Max Arduino value " << maxArduino
-    << " (analog value " << meanAnalogs[maxArduino] << ")" << std::endl;
+  if (g_verbosity > 0) {
+    std::cout << "Min Arduino value " << minArduino
+      << " (analog value " << meanAnalogs[minArduino] << ")" << std::endl;
+    std::cout << "Max Arduino value " << maxArduino
+      << " (analog value " << meanAnalogs[maxArduino] << ")" << std::endl;
+  }
 
   // Find values within the range that were not filled in and fill
   // them in with an interpolated value from the nearest entries above
@@ -288,8 +297,10 @@ int main(int argc, const char *argv[])
       }
     }
   }
-  std::cout << "  (Filled in " << interpCount << " skipped values)"
-    << std::endl;
+  if (g_verbosity > 0) {
+    std::cout << "  (Filled in " << interpCount << " skipped values)"
+      << std::endl;
+  }
 
   // Ensure that the mapping is monotonic.
   bool expectLarger = (meanAnalogs[maxArduino] < meanAnalogs[minArduino]);
@@ -297,16 +308,80 @@ int main(int argc, const char *argv[])
   for (size_t i = minArduino; i < maxArduino; i++) {
     bool larger = (meanAnalogs[i+1] < meanAnalogs[i]);
     if (larger != expectLarger) {
-      std::cerr << "   Replacing non-monotonic value " << meanAnalogs[i]
-        << " with value " << meanAnalogs[i+1]
-        << " at Arduino value " << i << std::endl;
+      if (g_verbosity > 1) {
+        std::cerr << "   Replacing non-monotonic value " << meanAnalogs[i]
+          << " with value " << meanAnalogs[i+1]
+          << " at Arduino value " << i << std::endl;
+      }
       meanAnalogs[i] = meanAnalogs[i+1];
       numNonMonotonic++;
     }
   }
-  std::cout << "  (Replaced " << numNonMonotonic << " non-monotonic values)"
-    << std::endl;
-  
+  if (g_verbosity > 0) {
+    std::cout << "  (Replaced " << numNonMonotonic << " non-monotonic values"
+      << " out of " << maxArduino-minArduino+1 << " total)"
+      << std::endl;
+  }
+
+  // Have them cycle the rotation the specified number of times
+  // moving rapidly and keep track of all of the reports from both the
+  // Arduino and the Analog.
+  //   Keep shoveling values into the vectors until they have turned
+  // around at least twice the specified number of times (up and down
+  // down again for each)
+  if (g_verbosity > 0) {
+    std::cout << "Measuring latency between devices:" << std::endl;
+    std::cout << "  (Rotate rapidly left and right " << count
+      << " times)" << std::endl;
+  }
+
+  requiredTurns = 2 * count;
+  lastDirection = 1;  //< 1 for going up, -1 for going down  
+  lastExtremum = lastArduinoValue;
+  numTurns = 0;
+  std::vector<DeviceThreadReport> arduinoReports, analogReports;
+  do {
+    // Fill in a default value in case we get no reports.
+    double thisArduinoValue = lastArduinoValue;
+
+    // Find the new value for the Arduino and the Analog, if any.
+    r = arduino.GetReports();
+    arduinoReports.insert(arduinoReports.end(), r.begin(), r.end());
+    if (r.size() > 0) {
+      thisArduinoValue = r.back().values[g_arduinoChannel];
+    }
+    r = analog.GetReports();
+    analogReports.insert(analogReports.end(), r.begin(), r.end());
+
+    // If we have a new Arduino value, check to see if we've turned around.
+    if (thisArduinoValue != lastArduinoValue) {
+
+      // See if we have turned around.  If we're going in the same direction
+      // we were, we adjust the extremum.  If the opposite, we see if we've
+      // gone past the threshold and turn around if so.
+      double offset = thisArduinoValue - lastExtremum;
+      if (offset * lastDirection > 0) {
+
+        // Going in the same direction, keep moving the extremum value to
+        // keep up with how far we have gone.
+        lastExtremum = thisArduinoValue;
+      } else if (fabs(thisArduinoValue - lastExtremum) > TURN_AROUND_THRESHOLD) {
+
+        // We went in the opposite direction from our overall motion and
+        // moved past the threshold.
+        lastDirection *= -1;
+        lastExtremum = thisArduinoValue;
+        if (g_verbosity > 1) {
+          std::cout << "  Turned around at value " << lastExtremum << std::endl;
+        }
+        numTurns++;
+      }
+
+      // Store the new value for future tests.
+      lastArduinoValue = thisArduinoValue;
+    }    
+  } while (numTurns < requiredTurns);
+
 
   // @todo
 
