@@ -30,7 +30,7 @@ int g_arduinoChannel = 0;
 void Usage(std::string name)
 {
   std::cerr << "Usage: " << name << " Arduino_serial_port Arduino_channel Analog_config_file Analog_channel [-count N]" << std::endl;
-  std::cerr << "       -count: Repeat the test N times (default 100)" << std::endl;
+  std::cerr << "       -count: Repeat the test N times (default 200)" << std::endl;
   std::cerr << "       Arduino_serial_port: Name of the serial device to use "
             << "to talk to the Arduino.  The Arduino must be running "
             << "the vrpn_streaming_arduino program." << std::endl;
@@ -55,11 +55,16 @@ static vrpn_Analog *CreateStreamingServer(
 
 int main(int argc, const char *argv[])
 {
+  // Constants that may some day become options.
+  size_t REQUIRED_PASSES = 3;
+  int TURN_AROUND_THRESHOLD = 7;
+  size_t ARDUINO_MAX = 1023;
+
   // Parse the command line.
   size_t realParams = 0;
   std::string analogConfigFileName;
   int analogChannel = 0;
-  int count = 100;
+  int count = 20;
   for (size_t i = 1; i < argc; i++) {
     if (argv[i] == std::string("-count")) {
       if (++i > argc) {
@@ -158,8 +163,6 @@ int main(int argc, const char *argv[])
   // Analog value to its vector of associated values.  We
   // continue until we have rotated left and right at least
   // the required number of times.
-  size_t REQUIRED_PASSES = 3;
-  int TURN_AROUND_THRESHOLD = 7;
   std::cout << "Producing mapping between devices:" << std::endl;
   std::cout << "  (Rotate slowly left and right " << REQUIRED_PASSES
     << " times)" << std::endl;
@@ -169,7 +172,7 @@ int main(int argc, const char *argv[])
   // 0 to 1023.
   std::vector<double> emptyVec;
   std::vector<std::vector<double> > arduinoVecs;
-  for (size_t i = 0; i < 1024; i++) {
+  for (size_t i = 0; i <= ARDUINO_MAX; i++) {
     arduinoVecs.push_back(emptyVec);
   }
 
@@ -227,6 +230,31 @@ int main(int argc, const char *argv[])
       lastArduinoValue = thisArduinoValue;
     }    
   } while (numTurns < requiredTurns);
+
+  // Compute the range over which we have values and the average value
+  // of the readings in each bin to use for our lookup table mapping from
+  // Arduino reading to Analog reading.
+  size_t minArduino = 1023;
+  size_t maxArduino = 0;
+  std::vector<double> meanAnalogs;
+  for (size_t i = 0; i <= ARDUINO_MAX; i++) {
+    double sum = 0;
+    size_t count = arduinoVecs[i].size();
+    for (size_t j = 0; j < count; j++) {
+      sum += arduinoVecs[i][j];
+    }
+    if (count > 0) {
+      meanAnalogs.push_back(sum/count);
+      if (i < minArduino) { minArduino = i; }
+      if (i > maxArduino) { maxArduino = i; }
+    } else {
+      meanAnalogs.push_back(0);
+    }
+  }
+  std::cout << "Min Arduino value " << minArduino
+    << " (analog value " << meanAnalogs[minArduino] << ")" << std::endl;
+  std::cout << "Max Arduino value " << maxArduino
+    << " (analog value " << meanAnalogs[maxArduino] << ")" << std::endl;
 
   // @todo
 
