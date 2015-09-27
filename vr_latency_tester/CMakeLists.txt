@@ -41,6 +41,8 @@ add_library(DeviceThread
     DeviceThread.h
     DeviceThreadVRPNAnalog.cpp
     DeviceThreadVRPNAnalog.h
+    ArduinoComparer.cpp
+    ArduinoComparer.h
 )
 target_link_libraries(DeviceThread
   ${VRPN_SERVER_LIBRARIES}

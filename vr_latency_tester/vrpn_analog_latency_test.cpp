@@ -20,6 +20,7 @@
 #include <iostream>
 #include <vector>
 #include <DeviceThreadVRPNAnalog.h>
+#include <ArduinoComparer.h>
 #include <vrpn_Streaming_Arduino.h>
 
 // Global state.
@@ -59,7 +60,6 @@ int main(int argc, const char *argv[])
   // Constants that may some day become options.
   size_t REQUIRED_PASSES = 3;
   int TURN_AROUND_THRESHOLD = 7;
-  size_t ARDUINO_MAX = 1023;
 
   // Parse the command line.
   size_t realParams = 0;
@@ -172,21 +172,13 @@ int main(int argc, const char *argv[])
       << " times)" << std::endl;
   }
 
-  // Construct a vector of vectors to store the values associated with
-  // each value from the Arduino.  The Arduino can take values from
-  // 0 to 1023.
-  std::vector<double> emptyVec;
-  std::vector<std::vector<double> > arduinoVecs;
-  for (size_t i = 0; i <= ARDUINO_MAX; i++) {
-    arduinoVecs.push_back(emptyVec);
-  }
-
   // Clear out all available reports so we start fresh
   arduino.GetReports();
   analog.GetReports();
 
   // Keep shoveling values into the vectors until they have turned
   // around at least 8 times (four up, four down)
+  ArduinoComparer aComp;
   size_t requiredTurns = 2 * REQUIRED_PASSES;
   int lastDirection = 1;  //< 1 for going up, -1 for going down  
   double lastExtremum = lastArduinoValue;
@@ -210,7 +202,7 @@ int main(int argc, const char *argv[])
     if (thisArduinoValue != lastArduinoValue) {
 
       // Add the new value into the appropriate bin.
-      arduinoVecs[static_cast<size_t>(thisArduinoValue)].push_back(lastAnalogValue);
+      aComp.addMapping(thisArduinoValue, lastAnalogValue);
 
       // See if we have turned around.  If we're going in the same direction
       // we were, we adjust the extremum.  If the opposite, we see if we've
@@ -241,85 +233,20 @@ int main(int argc, const char *argv[])
   // Compute the range over which we have values and the average value
   // of the readings in each bin to use for our lookup table mapping from
   // Arduino reading to Analog reading.
-  size_t minArduino = 1023;
-  size_t maxArduino = 0;
-  std::vector<double> meanAnalogs;
-  for (size_t i = 0; i <= ARDUINO_MAX; i++) {
-    double sum = 0;
-    size_t count = arduinoVecs[i].size();
-    for (size_t j = 0; j < count; j++) {
-      sum += arduinoVecs[i][j];
-    }
-    if (count > 0) {
-      meanAnalogs.push_back(sum/count);
-      if (i < minArduino) { minArduino = i; }
-      if (i > maxArduino) { maxArduino = i; }
-    } else {
-      meanAnalogs.push_back(0);
-    }
-  }
-  if (maxArduino <= minArduino + TURN_AROUND_THRESHOLD) {
-    std::cerr << "Insufficient Arduino measurements" << std::endl;
+  size_t numInterpolatedValue, numNonMonotonicValues;
+  if (!aComp.constructMapping(numInterpolatedValue, numNonMonotonicValues)) {
+    std::cerr << "Could not construct Arduino mapping." << std::endl;
     return -5;
   }
   if (g_verbosity > 0) {
-    std::cout << "Min Arduino value " << minArduino
-      << " (analog value " << meanAnalogs[minArduino] << ")" << std::endl;
-    std::cout << "Max Arduino value " << maxArduino
-      << " (analog value " << meanAnalogs[maxArduino] << ")" << std::endl;
-  }
-
-  // Find values within the range that were not filled in and fill
-  // them in with an interpolated value from the nearest entries above
-  // and below them.  Keep track of how many we filled in so we can
-  // report it.
-  size_t interpCount = 0;
-  for (size_t i = minArduino+1; i < maxArduino; i++) {
-    if (arduinoVecs[i].size() == 0) {
-
-      // Find the location of the next valid value.
-      // Because maxArduino has a value, we're guaranteed to
-      // find it.
-      size_t nextVal = i+1;
-      while (arduinoVecs[nextVal].size() == 0) {
-        nextVal++;
-      }
-
-      // Loop over the empty values and fill in interpolated
-      // values.
-      size_t base = i-1;
-      double gap = nextVal - base;
-      double baseVal = meanAnalogs[base];
-      double diffVal = meanAnalogs[nextVal] - baseVal;
-      for (size_t j = i; j < nextVal; j++) {
-        meanAnalogs[j] = baseVal + (j-base)/gap * diffVal;
-        interpCount++;
-      }
-    }
-  }
-  if (g_verbosity > 0) {
-    std::cout << "  (Filled in " << interpCount << " skipped values)"
+    std::cout << "Min Arduino value " << aComp.minArduinoValue()
+      << " (analog value " << aComp.getDeviceValueFor(aComp.minArduinoValue()) << ")" << std::endl;
+    std::cout << "Max Arduino value " << aComp.maxArduinoValue()
+      << " (analog value " << aComp.getDeviceValueFor(aComp.maxArduinoValue()) << ")" << std::endl;
+    std::cout << "  (Filled in " << numInterpolatedValue << " skipped values)"
       << std::endl;
-  }
-
-  // Ensure that the mapping is monotonic.
-  bool expectLarger = (meanAnalogs[maxArduino] < meanAnalogs[minArduino]);
-  size_t numNonMonotonic = 0;
-  for (size_t i = minArduino; i < maxArduino; i++) {
-    bool larger = (meanAnalogs[i+1] < meanAnalogs[i]);
-    if (larger != expectLarger) {
-      if (g_verbosity > 1) {
-        std::cerr << "   Replacing non-monotonic value " << meanAnalogs[i]
-          << " with value " << meanAnalogs[i+1]
-          << " at Arduino value " << i << std::endl;
-      }
-      meanAnalogs[i] = meanAnalogs[i+1];
-      numNonMonotonic++;
-    }
-  }
-  if (g_verbosity > 0) {
-    std::cout << "  (Replaced " << numNonMonotonic << " non-monotonic values"
-      << " out of " << maxArduino-minArduino+1 << " total)"
+    std::cout << "  (Replaced " << numNonMonotonicValues << " non-monotonic values"
+      << " out of " << aComp.maxArduinoValue()-aComp.minArduinoValue()+1 << " total)"
       << std::endl;
   }
 
@@ -346,12 +273,12 @@ int main(int argc, const char *argv[])
 
     // Find the new value for the Arduino and the Analog, if any.
     r = arduino.GetReports();
-    arduinoReports.insert(arduinoReports.end(), r.begin(), r.end());
+    aComp.addArduinoReports(r);
     if (r.size() > 0) {
       thisArduinoValue = r.back().values[g_arduinoChannel];
     }
     r = analog.GetReports();
-    analogReports.insert(analogReports.end(), r.begin(), r.end());
+    aComp.addDeviceReports(r);
 
     // If we have a new Arduino value, check to see if we've turned around.
     if (thisArduinoValue != lastArduinoValue) {
@@ -381,6 +308,9 @@ int main(int argc, const char *argv[])
       lastArduinoValue = thisArduinoValue;
     }    
   } while (numTurns < requiredTurns);
+
+  // Compute the error associated with the two measurements with no time
+  // shift between them.
 
 
   // @todo
