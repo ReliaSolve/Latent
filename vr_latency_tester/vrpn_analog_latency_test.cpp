@@ -251,10 +251,62 @@ int main(int argc, const char *argv[])
       meanAnalogs.push_back(0);
     }
   }
+  if (maxArduino <= minArduino + TURN_AROUND_THRESHOLD) {
+    std::cerr << "Insufficient Arduino measurements" << std::endl;
+    return -5;
+  }
   std::cout << "Min Arduino value " << minArduino
     << " (analog value " << meanAnalogs[minArduino] << ")" << std::endl;
   std::cout << "Max Arduino value " << maxArduino
     << " (analog value " << meanAnalogs[maxArduino] << ")" << std::endl;
+
+  // Find values within the range that were not filled in and fill
+  // them in with an interpolated value from the nearest entries above
+  // and below them.  Keep track of how many we filled in so we can
+  // report it.
+  size_t interpCount = 0;
+  for (size_t i = minArduino+1; i < maxArduino; i++) {
+    if (arduinoVecs[i].size() == 0) {
+
+      // Find the location of the next valid value.
+      // Because maxArduino has a value, we're guaranteed to
+      // find it.
+      size_t nextVal = i+1;
+      while (arduinoVecs[nextVal].size() == 0) {
+        nextVal++;
+      }
+
+      // Loop over the empty values and fill in interpolated
+      // values.
+      size_t base = i-1;
+      double gap = nextVal - base;
+      double baseVal = meanAnalogs[base];
+      double diffVal = meanAnalogs[nextVal] - baseVal;
+      for (size_t j = i; j < nextVal; j++) {
+        meanAnalogs[j] = baseVal + (j-base)/gap * diffVal;
+        interpCount++;
+      }
+    }
+  }
+  std::cout << "  (Filled in " << interpCount << " skipped values)"
+    << std::endl;
+
+  // Ensure that the mapping is monotonic.
+  bool expectLarger = (meanAnalogs[maxArduino] < meanAnalogs[minArduino]);
+  size_t numNonMonotonic = 0;
+  for (size_t i = minArduino; i < maxArduino; i++) {
+    bool larger = (meanAnalogs[i+1] < meanAnalogs[i]);
+    if (larger != expectLarger) {
+      std::cerr << "   Replacing non-monotonic value " << meanAnalogs[i]
+        << " with value " << meanAnalogs[i+1]
+        << " at Arduino value " << i << std::endl;
+      meanAnalogs[i] = meanAnalogs[i+1];
+      numNonMonotonic++;
+    }
+  }
+  std::cout << "  (Replaced " << numNonMonotonic << " non-monotonic values)"
+    << std::endl;
+  
 
   // @todo
 
