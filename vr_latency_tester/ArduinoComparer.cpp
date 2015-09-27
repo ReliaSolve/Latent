@@ -49,7 +49,7 @@ bool ArduinoComparer::addMapping(double arduinoVal, double deviceVal)
   return true;
 }
 
-bool ArduinoComparer::constructMapping(size_t &numInterp, size_t &numNonMonotonic)
+bool ArduinoComparer::constructMapping(size_t &numInterp)
 {
   // Make sure we have entries to compute.
   if (m_maxArduinoValue <= m_minArduinoValue) {
@@ -99,17 +99,6 @@ bool ArduinoComparer::constructMapping(size_t &numInterp, size_t &numNonMonotoni
         m_mappingMean[j] = baseVal + (j-base)/gap * diffVal;
         numInterp++;
       }
-    }
-  }
-
-  // Ensure that the mapping is monotonic.
-  bool expectLarger = (m_mappingMean[m_maxArduinoValue] <
-      m_mappingMean[m_minArduinoValue]);
-  for (size_t i = m_minArduinoValue; i < m_maxArduinoValue; i++) {
-    bool larger = (m_mappingMean[i+1] < m_mappingMean[i]);
-    if (larger != expectLarger) {
-      m_mappingMean[i] = m_mappingMean[i+1];
-      numNonMonotonic++;
     }
   }
 

@@ -233,8 +233,8 @@ int main(int argc, const char *argv[])
   // Compute the range over which we have values and the average value
   // of the readings in each bin to use for our lookup table mapping from
   // Arduino reading to Analog reading.
-  size_t numInterpolatedValue, numNonMonotonicValues;
-  if (!aComp.constructMapping(numInterpolatedValue, numNonMonotonicValues)) {
+  size_t numInterpolatedValue;
+  if (!aComp.constructMapping(numInterpolatedValue)) {
     std::cerr << "Could not construct Arduino mapping." << std::endl;
     return -5;
   }
@@ -244,9 +244,6 @@ int main(int argc, const char *argv[])
     std::cout << "Max Arduino value " << aComp.maxArduinoValue()
       << " (analog value " << aComp.getDeviceValueFor(aComp.maxArduinoValue()) << ")" << std::endl;
     std::cout << "  (Filled in " << numInterpolatedValue << " skipped values)"
-      << std::endl;
-    std::cout << "  (Replaced " << numNonMonotonicValues << " non-monotonic values"
-      << " out of " << aComp.maxArduinoValue()-aComp.minArduinoValue()+1 << " total)"
       << std::endl;
   }
 

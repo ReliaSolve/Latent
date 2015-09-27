@@ -35,9 +35,8 @@ class ArduinoComparer {
 
     /// @brief Fill in any values without entries, telling how many
     /// @param [out] numInterp How many values had to be interpolated.
-    /// @param [out] numNumMonotonic How many values had to be replaced to make monotonic.
     /// @return true on success, false on failure (no entries)
-    bool constructMapping(size_t &numInterp, size_t &numNonMonotonic);
+    bool constructMapping(size_t &numInterp);
 
     /// @brief Tell the minimum Arduino value mapped.
     size_t minArduinoValue() const { return m_minArduinoValue; }
@@ -53,13 +52,22 @@ class ArduinoComparer {
     //=======================================================
     // Methods used to store and optimize values to determine
     // latency.  A mapping must have been constructed before
-    // these can be used.
+    // these can be used.  Arduino and device reports must be
+    // added before the alignment functions can be called.
 
     /// @brief Add Arduino reports to those used for latency determination.
     bool addArduinoReports(std::vector<DeviceThreadReport> &r);
 
     /// @brief Add Device reports to those used for latency determination.
     bool addDeviceReports(std::vector<DeviceThreadReport> &r);
+
+    /// @brief Compute the time shift that produces the best alignment.
+    /// @param [out] optimalShiftSeconds Optimal shift in seconds to reduce
+    ///   the error between the arduino value and the Device value
+    ///   recorded at a particular time.  Temporal interpolation is
+    ///   used to align values not taken at the same instant.
+    /// @return true if a result was found, false if no reports.
+    
 
   protected:
     //=======================================================
