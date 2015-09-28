@@ -306,11 +306,14 @@ int main(int argc, const char *argv[])
     }    
   } while (numTurns < requiredTurns);
 
-  // Compute the error associated with the two measurements with no time
-  // shift between them.
-
-
-  // @todo
+  // Compute the latency between the Arduino and the device
+  double latency;
+  if (!aComp.computeLatency(g_arduinoChannel, analogChannel, latency)) {
+    std::cerr << "Could not compute latency" << std::endl;
+    return -6;
+  }
+  std::cout << "Error-minimizing latency, analog behind Arduino (milliseconds): "
+    << latency * 1e3 << std::endl;
 
   // We're done.  Shut down the threads and exit.
   return 0;

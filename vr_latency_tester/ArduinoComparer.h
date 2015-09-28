@@ -28,7 +28,7 @@
 class Trajectory {
   public:
     Trajectory(
-      std::vector<DeviceThreadReport> &reports  //< Holds the values to fill in
+      const std::vector<DeviceThreadReport> &reports  //< Holds the values to fill in
       , struct timeval start                    //< Defines 0 seconds
       , int index                               //< Which value to use from the reports
     );
@@ -41,9 +41,9 @@ class Trajectory {
     ///   If the time is between two entries in the list of reports, it will
     ///   linearly interpolate the value.  If there are multiple entries at the
     ///   same time, it picks one of them and returns it.
-    double lookup(double seconds);
+    double lookup(double seconds) const;
 
-  protected:
+    /// Class describing one entry in the trajectory vector.
     class Entry {
     public:
       double m_time;
@@ -59,10 +59,11 @@ class Trajectory {
 class ArduinoComparer {
   public:
     ArduinoComparer();
+    ~ArduinoComparer();
 
     //=======================================================
     // Methods used to construct the mapping from Arduino to
-    // Analog value.  Add as many mappings as desired and
+    // Device value.  Add as many mappings as desired and
     // then turn into a mapping using constructMapping().
 
     /// @brief Add an entry to help map arduino values to device values.
@@ -79,10 +80,10 @@ class ArduinoComparer {
     /// @brief Tell the maximum Arduino value mapped.
     size_t maxArduinoValue() const { return m_maxArduinoValue; }
 
-    /// @brief Read the Analog value associated with this Arduino value.
+    /// @brief Read the Device value associated with this Arduino value.
     /// @return Value associated with specified Arduino value (clamped to
     /// the maximum Arduino value).  If there is not a mapping, this returns 0.
-    double getDeviceValueFor(size_t arduinoValue);
+    double getDeviceValueFor(size_t arduinoValue) const;
 
     //=======================================================
     // Methods used to store and optimize values to determine
@@ -98,7 +99,7 @@ class ArduinoComparer {
 
     /// @brief Compute the time shift that produces the best alignment.
     /// @param [in] arduinoChannel Channel to read values from for the Arduino
-    /// @param [out] analogChannel Channel to read values from for the Analog
+    /// @param [out] deviceChannel Channel to read values from for the Device
     /// @param [out] optimalShiftSeconds Optimal shift in seconds to reduce
     ///   the error between the arduino value and the Device value
     ///   recorded at a particular time.  Temporal interpolation is
@@ -108,15 +109,15 @@ class ArduinoComparer {
     /// @return true if a result was found, false if no reports.
     bool computeLatency(
           int arduinoChannel
-          , int analogChannel
-          , double &outLatencySeconds);
+          , int deviceChannel
+          , double &outLatencySeconds) const;
 
   protected:
     //=======================================================
     // Data structures and routines to produce a mapping
     // between Arduino values and the reported device values.
-    std::vector<std::vector<double> > m_mappingVector;      //< Analog values
-    std::vector<double> m_mappingMean;    //< Mean values mapping from Arduino to Analog
+    std::vector<std::vector<double> > m_mappingVector;      //< device values
+    std::vector<double> m_mappingMean;    //< Mean values mapping from Arduino to device
     size_t m_minArduinoValue;       //< Minimum mapped Arduino value.
     size_t m_maxArduinoValue;       //< Maximum mapped Arduino value.
 
@@ -126,5 +127,18 @@ class ArduinoComparer {
     std::vector<DeviceThreadReport> m_arduinoReports;
     std::vector<DeviceThreadReport> m_deviceReports;
 
+    /// @brief Compute the sum of squared errors for trajectories given offset.
+    /// @param [in] aT Trajectory to use for the Arduino values
+    /// @param [in] dT Trajectory to use for the Device values
+    /// @param [in] offsetSeconds How far to shift the device values into the
+    ///   future when computing the differences.
+    /// @return The sum of squared differences between the device values
+    ///   shifted in time by the specified offset and the expected mapping
+    ///   for the nearest-time Arduino values.
+    double computeError(
+                const Trajectory &aT
+                , const Trajectory &dT
+                , double offsetSeconds
+           ) const;
 };
 

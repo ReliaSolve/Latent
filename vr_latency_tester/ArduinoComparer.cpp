@@ -22,7 +22,7 @@
 static size_t ARDUINO_MAX = 1023;
 
 Trajectory::Trajectory(
-      std::vector<DeviceThreadReport> &reports  //< Holds the values to fill in
+      const std::vector<DeviceThreadReport> &reports  //< Holds the values to fill in
       , struct timeval start                    //< Defines 0 seconds
       , int index                               //< Which value to use from the reports
 )
@@ -44,7 +44,7 @@ Trajectory::Trajectory(
   std::sort(m_entries.begin(), m_entries.end());
 }
 
-double Trajectory::lookup(double seconds)
+double Trajectory::lookup(double seconds) const
 {
   // Handle the boundary cases.
   if (m_entries.size() == 0) { return 0; }
@@ -87,6 +87,10 @@ ArduinoComparer::ArduinoComparer()
   // made.
   m_minArduinoValue = ARDUINO_MAX;
   m_maxArduinoValue = 0;
+}
+
+ArduinoComparer::~ArduinoComparer()
+{
 }
 
 bool ArduinoComparer::addMapping(double arduinoVal, double deviceVal)
@@ -160,7 +164,7 @@ bool ArduinoComparer::constructMapping(size_t &outNumInterp)
   return true;
 }
 
-double ArduinoComparer::getDeviceValueFor(size_t arduinoValue)
+double ArduinoComparer::getDeviceValueFor(size_t arduinoValue) const
 {
   // Make sure we have entries to read.
   if (m_maxArduinoValue <= m_minArduinoValue) {
@@ -199,8 +203,8 @@ bool ArduinoComparer::addDeviceReports(std::vector<DeviceThreadReport> &r)
 
 bool ArduinoComparer::computeLatency(
           int arduinoChannel
-          , int analogChannel
-          , double &outLatencySeconds)
+          , int deviceChannel
+          , double &outLatencySeconds) const
 {
   // Bogus value in case we have to bail.
   outLatencySeconds = -10e10;
@@ -208,7 +212,59 @@ bool ArduinoComparer::computeLatency(
     return false;
   }
 
+  // Compute the start time, which is the lowest time value in either
+  // of the report lists.
+  struct timeval start = m_deviceReports[0].sampleTime;
+  if (vrpn_TimevalGreater(start, m_arduinoReports[0].sampleTime)) {
+    start = m_arduinoReports[0].sampleTime;
+  }
 
-//  return true;
+  // Construct trajectories for both the Arduino and the device.
+  Trajectory arduinoTrajectory(m_arduinoReports, start, arduinoChannel);
+  Trajectory deviceTrajectory(m_deviceReports, start, deviceChannel);
+
+  // Compute the sum of squared differences between the device values and
+  // the expected mapping for the nearest-time Arduino values for a temporal
+  // offset of 0.
+  double minOffset = 0;
+  double minError = computeError(arduinoTrajectory, deviceTrajectory,
+    minOffset);
+
+  // @todo Turn this from a brute-force search into an optimization routine.
+  for (double offset = -300e-3; offset <= 300e-3; offset += 1e-3) {
+    double err = computeError(arduinoTrajectory, deviceTrajectory, offset);
+    if (err < minError) {
+      minError = err;
+      minOffset = offset;
+    }
+  }
+  outLatencySeconds = minOffset;
+
+  return true;
+}
+
+double ArduinoComparer::computeError(
+                const Trajectory &aT
+                , const Trajectory &dT
+                , double offsetSeconds
+           ) const
+{
+  double sum = 0;
+
+  // Check each reading in the device trajectory.  Find its time and
+  // shift it.  Then read the value from the Arduino trace at the
+  // shifted time and run its value through the mapping to find the
+  // expected device value at that time.  Compute the sum of squared
+  // errors.
+  for (size_t i = 0; i < dT.m_entries.size(); i++) {
+    double deviceValue = dT.m_entries[i].m_value;
+    double timeShifted = dT.m_entries[i].m_time + offsetSeconds;
+    size_t arduinoValue = static_cast<size_t>(aT.lookup(timeShifted));
+    double expectedDeviceValue = m_mappingMean[arduinoValue];
+    sum += (expectedDeviceValue - deviceValue) * 
+           (expectedDeviceValue - deviceValue);    
+  }
+
+  return sum;
 }
 
