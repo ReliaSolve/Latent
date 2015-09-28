@@ -256,9 +256,12 @@ double ArduinoComparer::computeError(
   // shifted time and run its value through the mapping to find the
   // expected device value at that time.  Compute the sum of squared
   // errors.
+  //  Because we want a positive offset to correspond to the device
+  // measurements being behind the Arduino, we need to offset the
+  // Arduino measurements by the negative of the offset.
   for (size_t i = 0; i < dT.m_entries.size(); i++) {
     double deviceValue = dT.m_entries[i].m_value;
-    double timeShifted = dT.m_entries[i].m_time + offsetSeconds;
+    double timeShifted = dT.m_entries[i].m_time - offsetSeconds;
     size_t arduinoValue = static_cast<size_t>(aT.lookup(timeShifted));
     double expectedDeviceValue = m_mappingMean[arduinoValue];
     sum += (expectedDeviceValue - deviceValue) * 
