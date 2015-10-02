@@ -116,7 +116,7 @@ int main(int argc, const char *argv[])
   // reading from the Device.  If the "config file" name
   // has an '@' sign in it, treat it as a device name and construct
   // a remote device using it as the name.
-  DeviceThread *device = nullptr;
+  DeviceThread *device = NULL;
   size_t at = deviceConfigFileName.find('@');
 
   if (deviceType == "analog") {
@@ -141,7 +141,7 @@ int main(int argc, const char *argv[])
   // or timeout.  Make sure the report sizes are large enough
   // to support the channels we're reading.
   struct timeval start, now;
-  vrpn_gettimeofday(&start, nullptr);
+  vrpn_gettimeofday(&start, NULL);
   size_t arduinoCount = 0;
   size_t deviceCount = 0;
   std::vector<DeviceThreadReport> r;
@@ -174,7 +174,7 @@ int main(int argc, const char *argv[])
     }
     deviceCount += r.size();
 
-    vrpn_gettimeofday(&now, nullptr);
+    vrpn_gettimeofday(&now, NULL);
   } while ( ((arduinoCount == 0) || (deviceCount == 0))
             && (vrpn_TimevalDurationSeconds(now, start) < 20) );
   if (arduinoCount == 0) {

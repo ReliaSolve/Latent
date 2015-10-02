@@ -24,7 +24,7 @@ DeviceThreadVRPNTracker::DeviceThreadVRPNTracker(DeviceThreadTrackerCreator devi
   : m_sensor(sensor)
 {
   // Initialize things we don't set in this constructor
-  m_genericServer = nullptr;
+  m_genericServer = NULL;
 
   // Construct a loopback connection for us to use.
   m_connection = vrpn_create_server_connection("loopback:");
@@ -35,11 +35,11 @@ DeviceThreadVRPNTracker::DeviceThreadVRPNTracker(DeviceThreadTrackerCreator devi
   m_server = deviceMaker(deviceName.c_str(), m_connection);
   m_remote = new vrpn_Tracker_Remote(deviceName.c_str(), m_connection);
   if (!m_connection || !m_server || !m_remote) {
-    delete m_remote; m_remote = nullptr;
-    delete m_server; m_server = nullptr;
+    delete m_remote; m_remote = NULL;
+    delete m_server; m_server = NULL;
     if (m_connection) {
       m_connection->removeReference();
-      m_connection = nullptr;
+      m_connection = NULL;
     }
     m_broken = true;
     return;
@@ -59,7 +59,7 @@ DeviceThreadVRPNTracker::DeviceThreadVRPNTracker(std::string configFileName,
   : m_sensor(sensor)
 {
   // Initialize things we don't set in this constructor
-  m_server = nullptr;
+  m_server = NULL;
 
   // Construct a loopback connection for us to use.
   m_connection = vrpn_create_server_connection("loopback:");
@@ -70,17 +70,17 @@ DeviceThreadVRPNTracker::DeviceThreadVRPNTracker(std::string configFileName,
     configFileName.c_str(), true);
   if (!m_genericServer->doing_okay()) {
     m_broken = true;
-    delete m_genericServer; m_genericServer = nullptr;
+    delete m_genericServer; m_genericServer = NULL;
     m_connection->removeReference();
     return;
   }
   m_remote = new vrpn_Tracker_Remote(deviceName.c_str(), m_connection);
   if (!m_connection || !m_genericServer || !m_remote) {
-    delete m_remote; m_remote = nullptr;
-    delete m_genericServer; m_genericServer = nullptr;
+    delete m_remote; m_remote = NULL;
+    delete m_genericServer; m_genericServer = NULL;
     if (m_connection) {
       m_connection->removeReference();
-      m_connection = nullptr;
+      m_connection = NULL;
     }
     m_broken = true;
     return;
@@ -100,13 +100,13 @@ DeviceThreadVRPNTracker::DeviceThreadVRPNTracker(std::string deviceName
   : m_sensor(sensor)
 {
   // Initialize things we don't set in this constructor
-  m_server = nullptr;
-  m_genericServer = nullptr;
-  m_connection = nullptr;
+  m_server = NULL;
+  m_genericServer = NULL;
+  m_connection = NULL;
 
   m_remote = new vrpn_Tracker_Remote(deviceName.c_str());
   if (!m_remote) {
-    delete m_remote; m_remote = nullptr;
+    delete m_remote; m_remote = NULL;
     m_broken = true;
     return;
   }
@@ -129,10 +129,10 @@ DeviceThreadVRPNTracker::~DeviceThreadVRPNTracker()
   if (m_remote) {
     m_remote->unregister_change_handler(this, HandleTrackerCallback, m_sensor);
   }
-  delete m_remote; m_remote = nullptr;
-  delete m_server; m_server = nullptr;
-  delete m_genericServer; m_genericServer = nullptr;
-  if (m_connection != nullptr) {
+  delete m_remote; m_remote = NULL;
+  delete m_server; m_server = NULL;
+  delete m_genericServer; m_genericServer = NULL;
+  if (m_connection != NULL) {
     m_connection->removeReference();
   }
 }
@@ -145,7 +145,7 @@ bool DeviceThreadVRPNTracker::ServiceDevice()
   if (m_genericServer) {
     if (!m_genericServer->doing_okay()) {
       m_broken = true;
-      delete m_genericServer; m_genericServer = nullptr;
+      delete m_genericServer; m_genericServer = NULL;
       return false;
     }
     m_genericServer->mainloop();
