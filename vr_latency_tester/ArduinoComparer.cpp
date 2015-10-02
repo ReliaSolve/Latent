@@ -168,7 +168,7 @@ double ArduinoComparer::getDeviceValueFor(size_t arduinoValue) const
 {
   // Make sure we have entries to read.
   if (m_maxArduinoValue <= m_minArduinoValue) {
-    return 0.0;
+    arduinoValue = m_minArduinoValue;
   }
 
   // Don't read past the end of the array.
@@ -176,7 +176,7 @@ double ArduinoComparer::getDeviceValueFor(size_t arduinoValue) const
     arduinoValue = m_maxArduinoValue;
   }
 
-  return m_mappingMean[m_maxArduinoValue];  
+  return m_mappingMean[arduinoValue];  
 }
 
 bool ArduinoComparer::addArduinoReports(std::vector<DeviceThreadReport> &r)

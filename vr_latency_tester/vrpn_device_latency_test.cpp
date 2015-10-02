@@ -20,6 +20,7 @@
 #include <iostream>
 #include <vector>
 #include <DeviceThreadVRPNAnalog.h>
+#include <DeviceThreadVRPNTracker.h>
 #include <ArduinoComparer.h>
 #include <vrpn_Streaming_Arduino.h>
 
@@ -31,7 +32,7 @@ int g_arduinoChannel = 0;
 
 void Usage(std::string name)
 {
-  std::cerr << "Usage: " << name << " Arduino_serial_port Arduino_channel [Analog_config_file|Analog_device_name] Analog_channel [-count N]" << std::endl;
+  std::cerr << "Usage: " << name << " Arduino_serial_port Arduino_channel DEVICE_TYPE [Device_config_file|Device_device_name] Device_channel [-count N]" << std::endl;
   std::cerr << "       -count: Repeat the test N times (default 200)" << std::endl;
   std::cerr << "       Arduino_serial_port: Name of the serial device to use "
             << "to talk to the Arduino.  The Arduino must be running "
@@ -39,9 +40,10 @@ void Usage(std::string name)
   std::cerr << "                    (On windows, something like COM5)" << std::endl;
   std::cerr << "                    (On mac, something like /dev/tty.usbmodem1411)" << std::endl;
   std::cerr << "       Arduino_channel: The channel that has the potentiometer on it" << std::endl;
-  std::cerr << "       Analog_config_file: Name of the config file that will construct exactly one vrpn_Analog-derived device named Analog0" << std::endl;
-  std::cerr << "       Analog_device_name: Name of the analog VRPN device to connect to, including server description (example: Analog0@localhost)" << std::endl;
-  std::cerr << "       Analog_channel: The channel that has the value to test" << std::endl;
+  std::cerr << "       DEVICE_TYPE: [analog|tracker]" << std::endl;
+  std::cerr << "       Device_config_file: Name of the config file that will construct exactly one vrpn_Device-derived device named Analog0 (for Analog) or Tracker0 (for Tracker)" << std::endl;
+  std::cerr << "       Device_device_name: Name of the VRPN device to connect to, including server description (example: Analog0@localhost)" << std::endl;
+  std::cerr << "       Device_channel: The channel that has the value to test" << std::endl;
   exit(-1);
 }
 
@@ -64,8 +66,9 @@ int main(int argc, const char *argv[])
 
   // Parse the command line.
   size_t realParams = 0;
-  std::string analogConfigFileName;
-  int analogChannel = 0;
+  std::string deviceType;
+  std::string deviceConfigFileName;
+  int deviceChannel = 0;
   int count = 10;
   for (size_t i = 1; i < argc; i++) {
     if (argv[i] == std::string("-count")) {
@@ -89,16 +92,19 @@ int main(int argc, const char *argv[])
         g_arduinoChannel = atoi(argv[i]);
         break;
       case 3:
-        analogConfigFileName = argv[i];
+        deviceType = argv[i];
         break;
       case 4:
-        analogChannel = atoi(argv[i]);
+        deviceConfigFileName = argv[i];
+        break;
+      case 5:
+        deviceChannel = atoi(argv[i]);
         break;
       default:
         Usage(argv[0]);
     }
   }
-  if (realParams != 4) {
+  if (realParams != 5) {
     Usage(argv[0]);
   }
 
@@ -107,19 +113,26 @@ int main(int argc, const char *argv[])
   DeviceThreadVRPNAnalog  arduino(CreateStreamingServer);
 
   // Construct the thread to handle the to-be-measured
-  // reading from the Analog.  If the "config file" name
+  // reading from the Device.  If the "config file" name
   // has an '@' sign in it, treat it as a device name and construct
   // a remote device using it as the name.
-  DeviceThreadVRPNAnalog  *analog = nullptr;
-  size_t at = analogConfigFileName.find('@');
-  if (at != std::string::npos) {
-    analog = new DeviceThreadVRPNAnalog(analogConfigFileName);
+  DeviceThread *device = nullptr;
+  size_t at = deviceConfigFileName.find('@');
+
+  if (deviceType == "analog") {
+    if (at != std::string::npos) {
+      device = new DeviceThreadVRPNAnalog(deviceConfigFileName);
+    } else {
+      device = new DeviceThreadVRPNAnalog(deviceConfigFileName, "Analog0");
+    }
+  } else if (deviceType == "tracker") {
+    if (at != std::string::npos) {
+      device = new DeviceThreadVRPNTracker(deviceConfigFileName);
+    } else {
+      device = new DeviceThreadVRPNTracker(deviceConfigFileName, "Tracker0");
+    }
   } else {
-    analog = new DeviceThreadVRPNAnalog(analogConfigFileName, "Analog0");
-  }
-  if (analog == nullptr) {
-    std::cerr << "Could not open analog or config file "
-      << analogConfigFileName << std::endl;
+    std::cerr << "Unrecognized device type: " << deviceType << std::endl;
     return -2;
   }
 
@@ -130,58 +143,58 @@ int main(int argc, const char *argv[])
   struct timeval start, now;
   vrpn_gettimeofday(&start, nullptr);
   size_t arduinoCount = 0;
-  size_t analogCount = 0;
+  size_t deviceCount = 0;
   std::vector<DeviceThreadReport> r;
   if (g_verbosity > 0) {
     std::cout << "Waiting for reports from all devices (you may need to move them):" << std::endl;
   }
-  double lastArduinoValue, lastAnalogValue;
+  double lastArduinoValue, lastDeviceValue;
   do {
     r = arduino.GetReports();
     if (r.size() > 0) {
       if (r[0].values.size() <= g_arduinoChannel) {
         std::cerr << "Report size from Arduino: " << r[0].values.size()
           << " is too small for requested channel: " << g_arduinoChannel << std::endl;
-        delete analog;
+        delete device;
         return -3;
       }
       lastArduinoValue = r.back().values[g_arduinoChannel];
     }
     arduinoCount += r.size();
 
-    r = analog->GetReports();
+    r = device->GetReports();
     if (r.size() > 0) {
-      if (r[0].values.size() <= analogChannel) {
-        std::cerr << "Report size from Analog: " << r[0].values.size()
-          << " is too small for requested channel: " << analogChannel << std::endl;
-        delete analog;
+      if (r[0].values.size() <= deviceChannel) {
+        std::cerr << "Report size from Device: " << r[0].values.size()
+          << " is too small for requested channel: " << deviceChannel << std::endl;
+        delete device;
         return -4;
       }
-      lastAnalogValue = r.back().values[analogChannel];
+      lastDeviceValue = r.back().values[deviceChannel];
     }
-    analogCount += r.size();
+    deviceCount += r.size();
 
     vrpn_gettimeofday(&now, nullptr);
-  } while ( ((arduinoCount == 0) || (analogCount == 0))
+  } while ( ((arduinoCount == 0) || (deviceCount == 0))
             && (vrpn_TimevalDurationSeconds(now, start) < 20) );
   if (arduinoCount == 0) {
     std::cerr << "No reports from Arduino" << std::endl;
-    delete analog;
+    delete device;
     return -5;
   }
-  if (analogCount == 0) {
-    std::cerr << "No reports from Analog" << std::endl;
-    delete analog;
+  if (deviceCount == 0) {
+    std::cerr << "No reports from Device" << std::endl;
+    delete device;
     return -6;
   }
 
   //-----------------------------------------------------------------
   // Produce the slow-motion mapping between the two devices.
-  // Keep track of the latest reported value from the analog at
+  // Keep track of the latest reported value from the device at
   // all times and assign this value to the vector of entries
   // for each possible value for the Arduino report (0-1023).
   // Every time we get a new Ardiuno report, we add the stored
-  // Analog value to its vector of associated values.  We
+  // Device value to its vector of associated values.  We
   // continue until we have rotated left and right at least
   // the required number of times.
   if (g_verbosity > 0) {
@@ -192,7 +205,7 @@ int main(int argc, const char *argv[])
 
   // Clear out all available reports so we start fresh
   arduino.GetReports();
-  analog->GetReports();
+  device->GetReports();
 
   // Keep shoveling values into the vectors until they have turned
   // around at least 8 times (four up, four down)
@@ -205,14 +218,14 @@ int main(int argc, const char *argv[])
     // Fill in a default value in case we get no reports.
     double thisArduinoValue = lastArduinoValue;
 
-    // Find the new value for the Arduino and the Analog, if any.
+    // Find the new value for the Arduino and the Device, if any.
     r = arduino.GetReports();
     if (r.size() > 0) {
       thisArduinoValue = r.back().values[g_arduinoChannel];
     }
-    r = analog->GetReports();
+    r = device->GetReports();
     if (r.size() > 0) {
-      lastAnalogValue = r.back().values[analogChannel];
+      lastDeviceValue = r.back().values[deviceChannel];
     }
 
     // If we have a new Arduino value, add a new entry into the
@@ -220,7 +233,7 @@ int main(int argc, const char *argv[])
     if (thisArduinoValue != lastArduinoValue) {
 
       // Add the new value into the appropriate bin.
-      aComp.addMapping(thisArduinoValue, lastAnalogValue);
+      aComp.addMapping(thisArduinoValue, lastDeviceValue);
 
       // See if we have turned around.  If we're going in the same direction
       // we were, we adjust the extremum.  If the opposite, we see if we've
@@ -250,25 +263,25 @@ int main(int argc, const char *argv[])
 
   // Compute the range over which we have values and the average value
   // of the readings in each bin to use for our lookup table mapping from
-  // Arduino reading to Analog reading.
+  // Arduino reading to Device reading.
   size_t numInterpolatedValue;
   if (!aComp.constructMapping(numInterpolatedValue)) {
     std::cerr << "Could not construct Arduino mapping." << std::endl;
-    delete analog;
+    delete device;
     return -7;
   }
   if (g_verbosity > 0) {
     std::cout << "Min Arduino value " << aComp.minArduinoValue()
-      << " (analog value " << aComp.getDeviceValueFor(aComp.minArduinoValue()) << ")" << std::endl;
+      << " (device value " << aComp.getDeviceValueFor(aComp.minArduinoValue()) << ")" << std::endl;
     std::cout << "Max Arduino value " << aComp.maxArduinoValue()
-      << " (analog value " << aComp.getDeviceValueFor(aComp.maxArduinoValue()) << ")" << std::endl;
+      << " (device value " << aComp.getDeviceValueFor(aComp.maxArduinoValue()) << ")" << std::endl;
     std::cout << "  (Filled in " << numInterpolatedValue << " skipped values)"
       << std::endl;
   }
 
   // Have them cycle the rotation the specified number of times
   // moving rapidly and keep track of all of the reports from both the
-  // Arduino and the Analog.
+  // Arduino and the Device.
   //   Keep shoveling values into the vectors until they have turned
   // around at least twice the specified number of times (up and down
   // down again for each)
@@ -282,18 +295,18 @@ int main(int argc, const char *argv[])
   lastDirection = 1;  //< 1 for going up, -1 for going down  
   lastExtremum = lastArduinoValue;
   numTurns = 0;
-  std::vector<DeviceThreadReport> arduinoReports, analogReports;
+  std::vector<DeviceThreadReport> arduinoReports, deviceReports;
   do {
     // Fill in a default value in case we get no reports.
     double thisArduinoValue = lastArduinoValue;
 
-    // Find the new value for the Arduino and the Analog, if any.
+    // Find the new value for the Arduino and the Device, if any.
     r = arduino.GetReports();
     aComp.addArduinoReports(r);
     if (r.size() > 0) {
       thisArduinoValue = r.back().values[g_arduinoChannel];
     }
-    r = analog->GetReports();
+    r = device->GetReports();
     aComp.addDeviceReports(r);
 
     // If we have a new Arduino value, check to see if we've turned around.
@@ -327,16 +340,16 @@ int main(int argc, const char *argv[])
 
   // Compute the latency between the Arduino and the device
   double latency;
-  if (!aComp.computeLatency(g_arduinoChannel, analogChannel, latency)) {
+  if (!aComp.computeLatency(g_arduinoChannel, deviceChannel, latency)) {
     std::cerr << "Could not compute latency" << std::endl;
-    delete analog;
+    delete device;
     return -8;
   }
-  std::cout << "Error-minimizing latency, analog behind Arduino (milliseconds): "
+  std::cout << "Error-minimizing latency, device behind Arduino (milliseconds): "
     << latency * 1e3 << std::endl;
 
   // We're done.  Shut down the threads and exit.
-  delete analog;
+  delete device;
   return 0;
 }
 

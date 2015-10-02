@@ -19,7 +19,9 @@
 #include <iostream>
 #include <quat.h>
 
-DeviceThreadVRPNTracker::DeviceThreadVRPNTracker(DeviceThreadTrackerCreator deviceMaker)
+DeviceThreadVRPNTracker::DeviceThreadVRPNTracker(DeviceThreadTrackerCreator deviceMaker
+  , int sensor)
+  : m_sensor(sensor)
 {
   // Initialize things we don't set in this constructor
   m_genericServer = nullptr;
@@ -46,14 +48,15 @@ DeviceThreadVRPNTracker::DeviceThreadVRPNTracker(DeviceThreadTrackerCreator devi
   // Connect the callback handler for the Tracker remote to our static
   // function that handles pushing the reports onto the vector of
   // reports, giving it a pointer to this class instance.
-  m_remote->register_change_handler(this, HandleTrackerCallback);
+  m_remote->register_change_handler(this, HandleTrackerCallback, m_sensor);
 
   // Start our thread running
   StartThread();
 }
 
 DeviceThreadVRPNTracker::DeviceThreadVRPNTracker(std::string configFileName,
-  std::string deviceName)
+  std::string deviceName, int sensor)
+  : m_sensor(sensor)
 {
   // Initialize things we don't set in this constructor
   m_server = nullptr;
@@ -86,13 +89,15 @@ DeviceThreadVRPNTracker::DeviceThreadVRPNTracker(std::string configFileName,
   // Connect the callback handler for the Tracker remote to our static
   // function that handles pushing the reports onto the vector of
   // reports, giving it a pointer to this class instance.
-  m_remote->register_change_handler(this, HandleTrackerCallback);
+  m_remote->register_change_handler(this, HandleTrackerCallback, m_sensor);
 
   // Start our thread running
   StartThread();
 }
 
-DeviceThreadVRPNTracker::DeviceThreadVRPNTracker(std::string deviceName)
+DeviceThreadVRPNTracker::DeviceThreadVRPNTracker(std::string deviceName
+  , int sensor)
+  : m_sensor(sensor)
 {
   // Initialize things we don't set in this constructor
   m_server = nullptr;
@@ -109,7 +114,7 @@ DeviceThreadVRPNTracker::DeviceThreadVRPNTracker(std::string deviceName)
   // Connect the callback handler for the Tracker remote to our static
   // function that handles pushing the reports onto the vector of
   // reports, giving it a pointer to this class instance.
-  m_remote->register_change_handler(this, HandleTrackerCallback);
+  m_remote->register_change_handler(this, HandleTrackerCallback, m_sensor);
 
   // Start our thread running
   StartThread();
@@ -122,7 +127,7 @@ DeviceThreadVRPNTracker::~DeviceThreadVRPNTracker()
 
   // Clean up after ourselves.
   if (m_remote) {
-    m_remote->unregister_change_handler(this, HandleTrackerCallback);
+    m_remote->unregister_change_handler(this, HandleTrackerCallback, m_sensor);
   }
   delete m_remote; m_remote = nullptr;
   delete m_server; m_server = nullptr;

@@ -36,6 +36,9 @@ typedef vrpn_Tracker *(*DeviceThreadTrackerCreator)(
 /// Generic vrpn_Tracker DeviceThread class.  Takes as a parameter
 /// to the constructor a function that constructs the desired type of
 /// object.
+///
+/// Reports six channels for the specified sensor, x,y,z as the
+/// first three and then Euler rotation around x,y,z as the next three.
 
 class DeviceThreadVRPNTracker : public DeviceThread {
   public:
@@ -47,7 +50,9 @@ class DeviceThreadVRPNTracker : public DeviceThread {
     /// the appropriate object derived from vrpn_Tracker with
     /// the specified name and connection (to be determined by the
     /// DeviceThread class).
-    DeviceThreadVRPNTracker(DeviceThreadTrackerCreator deviceMaker);
+    /// @param sensor [in] Optional sensor ID to read from.
+    DeviceThreadVRPNTracker(DeviceThreadTrackerCreator deviceMaker,
+      int sensor = 0);
 
     /// @brief Construct a DeviceThreadVRPNTracker using a config file.
     /// This creates a DeviceThread for a generic vrpn_Tracker
@@ -57,14 +62,16 @@ class DeviceThreadVRPNTracker : public DeviceThread {
     /// vrpn_Generic_Server_Object.  This config file should have
     /// exactly one vrpn_Tracker-derived object described.
     /// @param deviceName [in] Name of the device defined in the file.
+    /// @param sensor [in] Optional sensor ID to read from.
     DeviceThreadVRPNTracker(std::string configFileName,
-      std::string deviceName);
+      std::string deviceName, int sensor = 0);
 
     /// @brief Construct a DeviceThreadVRPNTracker using an external server.
     /// This creates a DeviceThread for a generic vrpn_Tracker
     /// device, using a remote connection to an external server.
     /// @param deviceName [in] Name of device (example: "Tracker0@localhost"
-    DeviceThreadVRPNTracker(std::string deviceName);
+    /// @param sensor [in] Optional sensor ID to read from.
+    DeviceThreadVRPNTracker(std::string deviceName, int sensor = 0);
 
     ~DeviceThreadVRPNTracker();
 
@@ -74,6 +81,7 @@ class DeviceThreadVRPNTracker : public DeviceThread {
     virtual bool ServiceDevice();
 
   protected:
+    int m_sensor;                   //< Sensor to read from
     vrpn_Connection *m_connection;  //< Connection to talk over
     vrpn_Tracker    *m_server;      //< Server object
     vrpn_Generic_Server_Object  *m_genericServer;   //< Generic server object
