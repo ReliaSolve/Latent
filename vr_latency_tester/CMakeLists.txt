@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 2.8.11)
 project(vr_latency_test)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -26,7 +26,10 @@ list(APPEND CMAKE_MODULE_PATH
 # Common libraries that we need
 find_package(VRPN REQUIRED)
 include_directories(${VRPN_INCLUDE_DIRS})
-set(VRPN_GENERIC_SERVER_LIBS gpsnmea vrpn_atmel)
+set(VRPN_GENERIC_SERVER_LIBS gpsnmea)
+if (UNIX)
+    set(VRPN_GENERIC_SERVER_LIBS gpsnmea vrpn_atmel)
+endif()
 
 # Will know to look for the other VRPN libraries in the
 # INSTALL directory if we're using Superbuild.  Otherwise,
