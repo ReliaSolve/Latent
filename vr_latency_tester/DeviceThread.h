@@ -59,28 +59,14 @@ class DeviceThread {
     bool IsBroken() const { return m_broken; }
     std::vector<DeviceThreadReport> GetReports();
 
+  protected:
     //=======================================================
-    // All subclasses override these methods if they want to
-    // do something during this part of the system operation.
-
-    /// Any device-opening code that should run when the thread
-    /// is started that should not happen in the constructor before
-    /// the thread is started.
-    virtual bool OpenDevice() { return true; }
-
+    // All subclasses override this method.
     /// Service the device; this is called repeatedly while the
     /// thread is running.  It should call the AddReport() method
     /// below whenever a new report comes in from the device.
-    virtual bool ServiceDevice() { return true; }
+    virtual bool ServiceDevice() = 0;
 
-    /// Any device-closing code that should run when the thread
-    /// is ending that should not happen in the destructor after
-    /// the thread is stopped.
-    /// @todo But this will be called from the base-class destructor,
-    /// after the child class has been destroyed....
-    virtual bool CloseDevice() { return true; }
-
-  protected:
     //=======================================================
     // Thread and associated semaphore handling.
     vrpn_Thread *m_thread;  //< The thread that runs the device
@@ -90,8 +76,8 @@ class DeviceThread {
 
     // Used by subclasses in their constructors and destructors
     // so they are fully operational when they are called.
-    void StartThread();
-    void StopThread();
+    void StartThread();   //< Call at the end of the constructor
+    void StopThread();    //< Call at the beginning of the destructor
 
     //=======================================================
     // Data structures and semaphores to handle reporting data back

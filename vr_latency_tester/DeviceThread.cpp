@@ -54,11 +54,6 @@ void DeviceThread::ThreadToRun(vrpn_ThreadData &threadData)
 {
   DeviceThread *me = static_cast<DeviceThread *>(threadData.pvUD);
 
-  // Open the device.  If this fails, report ourselves as broken.
-  if (!me->OpenDevice()) {
-    me->m_broken = true;
-  }
-
   // Continue running until our parent yanks our semaphore to get us to quit.
   // We don't sleep here; we're trying to minimize the latency of our
   // measurements even if it eats an entire CPU.
@@ -69,11 +64,6 @@ void DeviceThread::ThreadToRun(vrpn_ThreadData &threadData)
     if (!me->ServiceDevice()) {
       me->m_broken = true;
     }
-  }
-
-  // Close the device.  If this fails, report ourselves as broken.
-  if (!me->CloseDevice()) {
-    me->m_broken = true;
   }
 }
 
