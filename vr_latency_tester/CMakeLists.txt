@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 2.8.11)
 project(vr_latency_test)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
