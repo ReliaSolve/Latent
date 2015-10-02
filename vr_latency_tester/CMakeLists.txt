@@ -41,6 +41,8 @@ add_library(DeviceThread
     DeviceThread.h
     DeviceThreadVRPNAnalog.cpp
     DeviceThreadVRPNAnalog.h
+    DeviceThreadVRPNTracker.cpp
+    DeviceThreadVRPNTracker.h
     ArduinoComparer.cpp
     ArduinoComparer.h
 )

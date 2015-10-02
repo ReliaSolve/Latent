@@ -16,57 +16,57 @@
 
 #pragma once
 #include <DeviceThread.h>
-#include <vrpn_Analog.h>
+#include <vrpn_Tracker.h>
 #include <vrpn_Generic_server_object.h>
 #include <string>
 
 /// Function that returns a pointer to a new object that is derived from
-/// vrpn_Analog that has the specified name and uses the specified
+/// vrpn_Tracker that has the specified name and uses the specified
 /// connection.  All other constructor parameters must be filled in by
 /// the person presenting the function and be appropriate for the specific
-/// class being constructed.  This lets us hook an arbitrary vrpn_Analog
+/// class being constructed.  This lets us hook an arbitrary vrpn_Tracker
 /// server device into a thread with a loopback server and provide a
 /// stream of reports in a form needed by the latency-testing applications.
 
-typedef vrpn_Analog *(*DeviceThreadAnalogCreator)(
+typedef vrpn_Tracker *(*DeviceThreadTrackerCreator)(
           const char *deviceName    //< Name to give the device
           , vrpn_Connection *c      //< Connection for the server to use
 );
 
-/// Generic vrpn_Analog DeviceThread class.  Takes as a parameter
+/// Generic vrpn_Tracker DeviceThread class.  Takes as a parameter
 /// to the constructor a function that constructs the desired type of
 /// object.
 
-class DeviceThreadVRPNAnalog : public DeviceThread {
+class DeviceThreadVRPNTracker : public DeviceThread {
   public:
-    /// @brief Construct a DeviceThreadVRPNAnalog using a factory.
-    /// This creates a DeviceThread for a generic vrpn_Analog
+    /// @brief Construct a DeviceThreadVRPNTracker using a factory.
+    /// This creates a DeviceThread for a generic vrpn_Tracker
     /// device, using its own loopback connection and remote object
     /// to handle the callbacks.
     /// @param deviceMaker [in] Function that can be called to produce
-    /// the appropriate object derived from vrpn_Analog with
+    /// the appropriate object derived from vrpn_Tracker with
     /// the specified name and connection (to be determined by the
     /// DeviceThread class).
-    DeviceThreadVRPNAnalog(DeviceThreadAnalogCreator deviceMaker);
+    DeviceThreadVRPNTracker(DeviceThreadTrackerCreator deviceMaker);
 
-    /// @brief Construct a DeviceThreadVRPNAnalog using a config file.
-    /// This creates a DeviceThread for a generic vrpn_Analog
+    /// @brief Construct a DeviceThreadVRPNTracker using a config file.
+    /// This creates a DeviceThread for a generic vrpn_Tracker
     /// device, using its own loopback connection and remote object
     /// to handle the callbacks.
     /// @param configFileName [in] Name of config file to parse using a
     /// vrpn_Generic_Server_Object.  This config file should have
-    /// exactly one vrpn_Analog-derived object described.
+    /// exactly one vrpn_Tracker-derived object described.
     /// @param deviceName [in] Name of the device defined in the file.
-    DeviceThreadVRPNAnalog(std::string configFileName,
+    DeviceThreadVRPNTracker(std::string configFileName,
       std::string deviceName);
 
-    /// @brief Construct a DeviceThreadVRPNAnalog using an external server.
-    /// This creates a DeviceThread for a generic vrpn_Analog
+    /// @brief Construct a DeviceThreadVRPNTracker using an external server.
+    /// This creates a DeviceThread for a generic vrpn_Tracker
     /// device, using a remote connection to an external server.
-    /// @param deviceName [in] Name of device (example: "Analog0@localhost"
-    DeviceThreadVRPNAnalog(std::string deviceName);
+    /// @param deviceName [in] Name of device (example: "Tracker0@localhost"
+    DeviceThreadVRPNTracker(std::string deviceName);
 
-    ~DeviceThreadVRPNAnalog();
+    ~DeviceThreadVRPNTracker();
 
     /// The constructor and destructor handle making and tearing
     /// down the class, so we only need to override the ServiceDevice
@@ -75,15 +75,18 @@ class DeviceThreadVRPNAnalog : public DeviceThread {
 
   protected:
     vrpn_Connection *m_connection;  //< Connection to talk over
-    vrpn_Analog     *m_server;      //< Server object
+    vrpn_Tracker    *m_server;      //< Server object
     vrpn_Generic_Server_Object  *m_genericServer;   //< Generic server object
-    vrpn_Analog_Remote  *m_remote;   //< Remote object
+    vrpn_Tracker_Remote  *m_remote;   //< Remote object
 
-    /// Callback handler to get reports from the vrpn_Analog and
+    // Closes the devices after the subthread has stopped running
+    bool CloseDevice();
+
+    /// Callback handler to get reports from the vrpn_Tracker and
     /// pass them on up to the DeviceThread.
     /// @param userdata [in] 'this' pointer to our object.
     /// @param info [in] Information about the analog values.
-    static void VRPN_CALLBACK HandleAnalogCallback(
-        void *userdata, const vrpn_ANALOGCB info);
+    static void VRPN_CALLBACK HandleTrackerCallback(
+        void *userdata, const vrpn_TRACKERCB info);
 };
 

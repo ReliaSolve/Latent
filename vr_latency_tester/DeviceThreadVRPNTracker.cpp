@@ -14,11 +14,12 @@
   limitations under the License.
 */
 
-#include "DeviceThreadVRPNAnalog.h"
+#include "DeviceThreadVRPNTracker.h"
 #include <string>
 #include <iostream>
+#include <quat.h>
 
-DeviceThreadVRPNAnalog::DeviceThreadVRPNAnalog(DeviceThreadAnalogCreator deviceMaker)
+DeviceThreadVRPNTracker::DeviceThreadVRPNTracker(DeviceThreadTrackerCreator deviceMaker)
 {
   // Initialize things we don't set in this constructor
   m_genericServer = nullptr;
@@ -30,7 +31,7 @@ DeviceThreadVRPNAnalog::DeviceThreadVRPNAnalog(DeviceThreadAnalogCreator deviceM
   // use the connection and the same name.
   std::string deviceName = "DeviceThread";
   m_server = deviceMaker(deviceName.c_str(), m_connection);
-  m_remote = new vrpn_Analog_Remote(deviceName.c_str(), m_connection);
+  m_remote = new vrpn_Tracker_Remote(deviceName.c_str(), m_connection);
   if (!m_connection || !m_server || !m_remote) {
     delete m_remote; m_remote = nullptr;
     delete m_server; m_server = nullptr;
@@ -42,16 +43,16 @@ DeviceThreadVRPNAnalog::DeviceThreadVRPNAnalog(DeviceThreadAnalogCreator deviceM
     return;
   }
 
-  // Connect the callback handler for the Analog remote to our static
+  // Connect the callback handler for the Tracker remote to our static
   // function that handles pushing the reports onto the vector of
   // reports, giving it a pointer to this class instance.
-  m_remote->register_change_handler(this, HandleAnalogCallback);
+  m_remote->register_change_handler(this, HandleTrackerCallback);
 
   // Start our thread running
   StartThread();
 }
 
-DeviceThreadVRPNAnalog::DeviceThreadVRPNAnalog(std::string configFileName,
+DeviceThreadVRPNTracker::DeviceThreadVRPNTracker(std::string configFileName,
   std::string deviceName)
 {
   // Initialize things we don't set in this constructor
@@ -70,7 +71,7 @@ DeviceThreadVRPNAnalog::DeviceThreadVRPNAnalog(std::string configFileName,
     m_connection->removeReference();
     return;
   }
-  m_remote = new vrpn_Analog_Remote(deviceName.c_str(), m_connection);
+  m_remote = new vrpn_Tracker_Remote(deviceName.c_str(), m_connection);
   if (!m_connection || !m_genericServer || !m_remote) {
     delete m_remote; m_remote = nullptr;
     delete m_genericServer; m_genericServer = nullptr;
@@ -82,46 +83,46 @@ DeviceThreadVRPNAnalog::DeviceThreadVRPNAnalog(std::string configFileName,
     return;
   }
 
-  // Connect the callback handler for the Analog remote to our static
+  // Connect the callback handler for the Tracker remote to our static
   // function that handles pushing the reports onto the vector of
   // reports, giving it a pointer to this class instance.
-  m_remote->register_change_handler(this, HandleAnalogCallback);
+  m_remote->register_change_handler(this, HandleTrackerCallback);
 
   // Start our thread running
   StartThread();
 }
 
-DeviceThreadVRPNAnalog::DeviceThreadVRPNAnalog(std::string deviceName)
+DeviceThreadVRPNTracker::DeviceThreadVRPNTracker(std::string deviceName)
 {
   // Initialize things we don't set in this constructor
   m_server = nullptr;
   m_genericServer = nullptr;
   m_connection = nullptr;
 
-  m_remote = new vrpn_Analog_Remote(deviceName.c_str());
+  m_remote = new vrpn_Tracker_Remote(deviceName.c_str());
   if (!m_remote) {
     delete m_remote; m_remote = nullptr;
     m_broken = true;
     return;
   }
 
-  // Connect the callback handler for the Analog remote to our static
+  // Connect the callback handler for the Tracker remote to our static
   // function that handles pushing the reports onto the vector of
   // reports, giving it a pointer to this class instance.
-  m_remote->register_change_handler(this, HandleAnalogCallback);
+  m_remote->register_change_handler(this, HandleTrackerCallback);
 
   // Start our thread running
   StartThread();
 }
 
-DeviceThreadVRPNAnalog::~DeviceThreadVRPNAnalog()
+DeviceThreadVRPNTracker::~DeviceThreadVRPNTracker()
 {
   // Tell our thread it is time to stop running.
   StopThread();
 
   // Clean up after ourselves.
   if (m_remote) {
-    m_remote->unregister_change_handler(this, HandleAnalogCallback);
+    m_remote->unregister_change_handler(this, HandleTrackerCallback);
   }
   delete m_remote; m_remote = nullptr;
   delete m_server; m_server = nullptr;
@@ -131,7 +132,7 @@ DeviceThreadVRPNAnalog::~DeviceThreadVRPNAnalog()
   }
 }
 
-bool DeviceThreadVRPNAnalog::ServiceDevice()
+bool DeviceThreadVRPNTracker::ServiceDevice()
 {
   // We just mainloop() all of our objects here, which will cause
   // callbacks to be delivered with new data.
@@ -150,17 +151,25 @@ bool DeviceThreadVRPNAnalog::ServiceDevice()
 }
 
 // Static function
-void DeviceThreadVRPNAnalog::HandleAnalogCallback(
-        void *userdata, const vrpn_ANALOGCB info)
+void DeviceThreadVRPNTracker::HandleTrackerCallback(
+        void *userdata, const vrpn_TRACKERCB info)
 {
-  DeviceThreadVRPNAnalog *me = static_cast<DeviceThreadVRPNAnalog *>(userdata);
+  DeviceThreadVRPNTracker *me = static_cast<DeviceThreadVRPNTracker *>(userdata);
 
-  // Construct a vector of values from the analog data, one per
-  // each entry.
+  // Construct a vector of values from the tracker data,
+  // with the first three from position and the last three
+  // from Euler angles derived from the Quaternion.
+
+  q_vec_type yawPitchRoll;
+  q_to_euler(yawPitchRoll, info.quat);
+
   std::vector<double> values;
-  for (int i = 0; i < info.num_channel; i++) {
-    values.push_back(info.channel[i]);
-  }
+  values.push_back(info.pos[Q_X]);
+  values.push_back(info.pos[Q_Y]);
+  values.push_back(info.pos[Q_Z]);
+  values.push_back(yawPitchRoll[Q_ROLL]);
+  values.push_back(yawPitchRoll[Q_PITCH]);
+  values.push_back(yawPitchRoll[Q_YAW]);
 
   // Send the new report, using the info time as the sample time.
   me->AddReport(values, info.msg_time);
