@@ -91,6 +91,29 @@ DeviceThreadVRPNAnalog::DeviceThreadVRPNAnalog(std::string configFileName,
   StartThread();
 }
 
+DeviceThreadVRPNAnalog::DeviceThreadVRPNAnalog(std::string deviceName)
+{
+  // Initialize things we don't set in this constructor
+  m_server = nullptr;
+  m_genericServer = nullptr;
+  m_connection = nullptr;
+
+  m_remote = new vrpn_Analog_Remote(deviceName.c_str());
+  if (!m_remote) {
+    delete m_remote; m_remote = nullptr;
+    m_broken = true;
+    return;
+  }
+
+  // Connect the callback handler for the Analog remote to our static
+  // function that handles pushing the reports onto the vector of
+  // reports, giving it a pointer to this class instance.
+  m_remote->register_change_handler(this, HandleAnalogCallback);
+
+  // Start our thread running
+  StartThread();
+}
+
 DeviceThreadVRPNAnalog::~DeviceThreadVRPNAnalog()
 {
   // Tell our thread it is time to stop running.

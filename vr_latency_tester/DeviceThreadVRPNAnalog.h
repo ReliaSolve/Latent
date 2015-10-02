@@ -56,10 +56,15 @@ class DeviceThreadVRPNAnalog : public DeviceThread {
     /// @param configFileName [in] Name of config file to parse using a
     /// vrpn_Generic_Server_Object.  This config file should have
     /// exactly one vrpn_Analog-derived object described.
-    /// @param deviceName [in] Optional name of the device; the
-    /// default name is Analog0.
+    /// @param deviceName [in] Name of the device defined in the file.
     DeviceThreadVRPNAnalog(std::string configFileName,
-      std::string deviceName = "Analog0");
+      std::string deviceName);
+
+    /// @brief Construct a DeviceThreadVRPNAnalog using an external server.
+    /// This creates a DeviceThread for a generic vrpn_Analog
+    /// device, using a remote connection to an external server.
+    /// @param deviceName [in] Name of device (example: "Analog0@localhost"
+    DeviceThreadVRPNAnalog(std::string deviceName);
 
     ~DeviceThreadVRPNAnalog();
 
