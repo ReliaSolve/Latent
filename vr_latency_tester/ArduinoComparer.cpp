@@ -233,7 +233,7 @@ bool ArduinoComparer::computeLatency(
   // @todo Turn this from a brute-force search into an optimization routine.
   for (double offset = -300e-3; offset <= 300e-3; offset += 1e-3) {
     double err = computeError(arduinoTrajectory, deviceTrajectory, offset);
-    std::cout << offset << ", " << err << std::endl;
+    std::cout << "XXX offset vs. error: " << offset << ", " << err << std::endl;
     if (err < minError) {
       minError = err;
       minOffset = offset;

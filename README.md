@@ -18,6 +18,10 @@ pin 3 and report it as analog 0, presuming that a jumper has been
 installed between the two.  It is meant to operate in combination with
 the *test_arduino_latency* program.
 
+*doc*:
+Documentation on how to build and run the programs, in addition to
+descriptions of how the various tools work.
+
 # License
 Copyright 2015 ReliaSolve.com
 
