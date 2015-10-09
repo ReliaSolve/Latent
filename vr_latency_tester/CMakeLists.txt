@@ -60,3 +60,9 @@ target_link_libraries(vrpn_device_latency_test
 )
 install(TARGETS vrpn_device_latency_test DESTINATION bin)
 
+add_executable(arduino_inputs_latency_test arduino_inputs_latency_test.cpp)
+target_link_libraries(arduino_inputs_latency_test
+  DeviceThread
+)
+install(TARGETS arduino_inputs_latency_test DESTINATION bin)
+
