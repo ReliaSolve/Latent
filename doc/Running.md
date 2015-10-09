@@ -12,8 +12,9 @@ by a configuration file) or connected to an externally-run server (using
 a full VRPN device name).  Running the program with no arguments provides
 a usage message:
 
-	Usage: C:\tmp\vs2015_64\vr_latency_tester\INSTALL\bin\vrpn_device_latency_test.exe Arduino_serial_port Arduino_channel DEVICE_TYPE [Device_config_file|Device_device_name] Device_channel [-count N]
+	Usage: C:\tmp\vs2015_64\vr_latency_tester\INSTALL\bin\vrpn_device_latency_test.exe Arduino_serial_port Arduino_channel DEVICE_TYPE [Device_config_file|Device_device_name] Device_channel [-count N] [-arrivalTime]
 	       -count: Repeat the test N times (default 200)
+	       -arrivalTime: Use arrival time of messages (default reported sampling time)
 	       Arduino_serial_port: Name of the serial device to use to talk to the Arduino.  The Arduino must be running the vrpn_streaming_arduino program.
 	                    (On windows, something like COM5)
 	                    (On mac, something like /dev/tty.usbmodem1411)

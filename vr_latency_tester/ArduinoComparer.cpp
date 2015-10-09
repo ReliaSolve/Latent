@@ -25,6 +25,7 @@ Trajectory::Trajectory(
       const std::vector<DeviceThreadReport> &reports  //< Holds the values to fill in
       , struct timeval start                    //< Defines 0 seconds
       , int index                               //< Which value to use from the reports
+      , bool arrivalTime                        //< Use arrival time rather than reported time
 )
 {
   if (index < 0) { return; }
@@ -35,7 +36,11 @@ Trajectory::Trajectory(
     if (reports[i].values.size() > index) {
       Entry e;
       e.m_value = reports[i].values[index];
-      e.m_time = vrpn_TimevalDurationSeconds(reports[i].sampleTime, start);
+      if (arrivalTime) {
+        e.m_time = vrpn_TimevalDurationSeconds(reports[i].arrivalTime, start);
+      } else {
+        e.m_time = vrpn_TimevalDurationSeconds(reports[i].sampleTime, start);
+      }
       m_entries.push_back(e);
     }
   }
@@ -204,7 +209,8 @@ bool ArduinoComparer::addDeviceReports(std::vector<DeviceThreadReport> &r)
 bool ArduinoComparer::computeLatency(
           int arduinoChannel
           , int deviceChannel
-          , double &outLatencySeconds) const
+          , double &outLatencySeconds
+          , bool arrivalTime ) const
 {
   // Bogus value in case we have to bail.
   outLatencySeconds = -10e10;
@@ -214,16 +220,22 @@ bool ArduinoComparer::computeLatency(
 
   // Compute the start time, which is the lowest time value in either
   // of the report lists.
-  struct timeval start = m_deviceReports[0].sampleTime;
-  if (vrpn_TimevalGreater(start, m_arduinoReports[0].sampleTime)) {
-    start = m_arduinoReports[0].sampleTime;
+  struct timeval start;
+  if (arrivalTime) {
+    start = m_deviceReports[0].arrivalTime;
+    if (vrpn_TimevalGreater(start, m_arduinoReports[0].arrivalTime)) {
+      start = m_arduinoReports[0].arrivalTime;
+    }
+  } else {
+    start = m_deviceReports[0].sampleTime;
+    if (vrpn_TimevalGreater(start, m_arduinoReports[0].sampleTime)) {
+      start = m_arduinoReports[0].sampleTime;
+    }
   }
-  std::cout << "XXX Arduino first time = " << m_arduinoReports[0].sampleTime.tv_sec << std::endl;
-  std::cout << "XXX Analog first time = " << m_deviceReports[0].sampleTime.tv_sec << std::endl;
 
   // Construct trajectories for both the Arduino and the device.
-  Trajectory arduinoTrajectory(m_arduinoReports, start, arduinoChannel);
-  Trajectory deviceTrajectory(m_deviceReports, start, deviceChannel);
+  Trajectory arduinoTrajectory(m_arduinoReports, start, arduinoChannel, arrivalTime);
+  Trajectory deviceTrajectory(m_deviceReports, start, deviceChannel, arrivalTime);
 
   // Compute the sum of squared differences between the device values and
   // the expected mapping for the nearest-time Arduino values for a temporal
@@ -250,7 +262,7 @@ double ArduinoComparer::computeError(
                 const Trajectory &aT
                 , const Trajectory &dT
                 , double offsetSeconds
-           ) const
+  ) const
 {
   double sum = 0;
 

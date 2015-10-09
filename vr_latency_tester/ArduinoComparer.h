@@ -31,6 +31,7 @@ class Trajectory {
       const std::vector<DeviceThreadReport> &reports  //< Holds the values to fill in
       , struct timeval start                    //< Defines 0 seconds
       , int index                               //< Which value to use from the reports
+      , bool arrivalTime = false                //< Use arrival time rather than reported time
     );
 
     /// @brief Look up an interpolated value at specified seconds past start time.
@@ -106,11 +107,14 @@ class ArduinoComparer {
     ///   used to align values not taken at the same instant.  Positive
     ///   shift means that the device values were later than the
     ///   Arduino values, and is what is expected.
+    /// @param [in] arrivalTime Use arrival time rather than report time
     /// @return true if a result was found, false if no reports.
     bool computeLatency(
           int arduinoChannel
           , int deviceChannel
-          , double &outLatencySeconds) const;
+          , double &outLatencySeconds
+          , bool arrivalTime = false
+      ) const;
 
   protected:
     //=======================================================

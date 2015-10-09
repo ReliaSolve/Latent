@@ -32,8 +32,9 @@ int g_arduinoChannel = 0;
 
 void Usage(std::string name)
 {
-  std::cerr << "Usage: " << name << " Arduino_serial_port Arduino_channel DEVICE_TYPE [Device_config_file|Device_device_name] Device_channel [-count N]" << std::endl;
+  std::cerr << "Usage: " << name << " Arduino_serial_port Arduino_channel DEVICE_TYPE [Device_config_file|Device_device_name] Device_channel [-count N] [-arrivalTime]" << std::endl;
   std::cerr << "       -count: Repeat the test N times (default 200)" << std::endl;
+  std::cerr << "       -arrivalTime: Use arrival time of messages (default reported sampling time)" << std::endl;
   std::cerr << "       Arduino_serial_port: Name of the serial device to use "
             << "to talk to the Arduino.  The Arduino must be running "
             << "the vrpn_streaming_arduino program." << std::endl;
@@ -70,6 +71,7 @@ int main(int argc, const char *argv[])
   std::string deviceConfigFileName;
   int deviceChannel = 0;
   int count = 10;
+  bool arrivalTime = false;
   for (size_t i = 1; i < argc; i++) {
     if (argv[i] == std::string("-count")) {
       if (++i > argc) {
@@ -82,6 +84,8 @@ int main(int argc, const char *argv[])
           << argv[i] << std::endl;
         Usage(argv[0]);
       }
+    } else if (argv[i] == std::string("-arrivalTime")) {
+      arrivalTime = true;
     } else if (argv[i][0] == '-') {
         Usage(argv[0]);
     } else switch (++realParams) {
@@ -340,7 +344,7 @@ int main(int argc, const char *argv[])
 
   // Compute the latency between the Arduino and the device
   double latency;
-  if (!aComp.computeLatency(g_arduinoChannel, deviceChannel, latency)) {
+  if (!aComp.computeLatency(g_arduinoChannel, deviceChannel, latency, arrivalTime)) {
     std::cerr << "Could not compute latency" << std::endl;
     delete device;
     return -8;
