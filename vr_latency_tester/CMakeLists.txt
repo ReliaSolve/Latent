@@ -25,7 +25,7 @@ list(APPEND CMAKE_MODULE_PATH
 
 # Common libraries that we need
 find_package(VRPN REQUIRED)
-include_directories(${VRPN_INCLUDE_DIRS})
+include_directories(BEFORE ${VRPN_INCLUDE_DIRS})
 set(VRPN_GENERIC_SERVER_LIBS gpsnmea)
 if (UNIX)
     set(VRPN_GENERIC_SERVER_LIBS gpsnmea vrpn_atmel)

@@ -35,12 +35,12 @@ set(VRPN_ROOT_DIR
 	"Root directory to search for VRPN")
 
 if("${CMAKE_SIZEOF_VOID_P}" MATCHES "8")
-	set(_libsuffixes lib64 lib)
+	set(_libsuffixes lib64 lib RelWithDebInfo Release Debug)
 
 	# 64-bit dir: only set on win64
 	file(TO_CMAKE_PATH "$ENV{ProgramW6432}" _progfiles)
 else()
-	set(_libsuffixes lib)
+	set(_libsuffixes lib RelWithDebInfo Release Debug)
 	set(_PF86 "ProgramFiles(x86)")
 	if(NOT "$ENV{${_PF86}}" STREQUAL "")
 		# 32-bit dir: only set on win64
