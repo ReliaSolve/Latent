@@ -33,7 +33,9 @@ and to a running OSVR server connected to an OSVR HDK with the default device na
 unit and *com_osvr_Multiserver/OSVRHackerDevKitPrediction0* for the predicted one),
 checking the rotation around the Z axis (first three channels are translation around
 X, Y, Z; next three are rotation), you would use the following command:
+
 	vrpn_device_latency_test.exe COM5 0 tracker com_osvr_Multiserver/OSVRHackerDevKit0@localhost 5
+
 (When the OSVR server is switched over to the IANA-specified OSVR port, the device name will change to com_osvr_Multiserver/OSVRHackerDevKit0@localhost:7728.)
 
 
