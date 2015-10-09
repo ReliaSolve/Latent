@@ -151,7 +151,7 @@ bool ArduinoComparer::constructMapping(size_t &outNumInterp)
       // Loop over the empty values and fill in interpolated
       // values.
       size_t base = i-1;
-      double gap = nextVal - base;
+      double gap = static_cast<double>(nextVal - base);
       double baseVal = m_mappingMean[base];
       double diffVal = m_mappingMean[nextVal] - baseVal;
       for (size_t j = i; j < nextVal; j++) {
@@ -218,6 +218,8 @@ bool ArduinoComparer::computeLatency(
   if (vrpn_TimevalGreater(start, m_arduinoReports[0].sampleTime)) {
     start = m_arduinoReports[0].sampleTime;
   }
+  std::cout << "XXX Arduino first time = " << m_arduinoReports[0].sampleTime.tv_sec << std::endl;
+  std::cout << "XXX Analog first time = " << m_deviceReports[0].sampleTime.tv_sec << std::endl;
 
   // Construct trajectories for both the Arduino and the device.
   Trajectory arduinoTrajectory(m_arduinoReports, start, arduinoChannel);

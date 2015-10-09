@@ -65,6 +65,10 @@ readings to find the most-consistent latency offset regardless of speed.  The sp
 should be fast enough to expose the latency, so should include rotations that are
 as fast as possible.
 
+Once again, the program will report the Arduino values where the rotation turned
+around, and it will then estimate and report the latency between the potentiometer
+readings and the VRPN device readings in milliseconds.
+
 ### Examples
 
 **Windows OSVR HDK**: To connect to an Arduino on serial port COM5 (you can find
