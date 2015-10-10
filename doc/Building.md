@@ -26,18 +26,15 @@ circuit to be hooked up to analog input 1.
 ### The basic board
 
 
-<div style="float: right">
-  <img src="./arduino_uno.jpg">
+<img align="right" src="./arduino_uno.jpg">
 A prototype unit was built using an Arduino Uno board.  The particular
 board used was the SainSmart UNO ATmega328P, which was purchased
 through [Amazon.com](http://smile.amazon.com/SainSmart-ATmega328P-CABLE-Included-Arduino/dp/B006GX8IAY/ref=sr_1_5?s=electronics&ie=UTF8&qid=1422119284&sr=1-5&keywords=arduino+uno) for $17.69.
-</div>
 
 
 ### Connecting the devices
 
-<div style="float: right">
-  <img src="./phototransistor_circuit.png">
+<img align="right" src="./phototransistor_circuit.png">
 Viewing the screen brightness can be done using an IR phototransistor
 purchased at Radio Shack, which also operated in the visible-light
 range (part number 276-0145, $1.99).  It can be hooked up according
@@ -47,7 +44,6 @@ a 500kΩ resistor (RL) can be placed in series with the phototransistor.
 To make the values be larger for brighter light, a common-collector
 configuration with the resistor placed between the transistor output
 and ground can be used.
-</div>
 
 ### Handling high-impedance circuits
 
