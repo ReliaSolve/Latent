@@ -27,7 +27,7 @@ circuit to be hooked up to analog input 1.
 
 
 <div style="float: right">
-  ![Arduino Uno](./arduino_uno.jpg)
+  <img src="./arduino_uno.jpg">
 </div>
 A prototype unit was built using an Arduino Uno board.  The particular
 board used was the SainSmart UNO ATmega328P, which was purchased
@@ -37,7 +37,7 @@ through [Amazon.com](http://smile.amazon.com/SainSmart-ATmega328P-CABLE-Included
 ### Connecting the devices
 
 <div style="float: right">
-  ![Phototransistor circuit](./phototransistor_circuit.png)
+  <img src="./phototransistor_circuit.png">
 </div>
 Viewing the screen brightness can be done using an IR phototransistor
 purchased at Radio Shack, which also operated in the visible-light
