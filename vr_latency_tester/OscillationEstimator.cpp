@@ -18,11 +18,15 @@
 #include <vrpn_Shared.h>
 #include <algorithm>
 #include <iostream>
+#include <cmath>
+#include <algorithm>
 
-OscillationEstimator::OscillationEstimator(double windowSeconds)
+OscillationEstimator::OscillationEstimator(double windowSeconds,
+  int verbosity)
 {
   m_windowSeconds = windowSeconds;
   m_windowReached = false;
+  m_verbosity = verbosity;
 }
 
 OscillationEstimator::~OscillationEstimator()
@@ -63,6 +67,10 @@ bool OscillationEstimator::addReport(const DeviceThreadReport &rep)
     m_windowReached = false;
 
     m_reports.push_back(rep);
+    if (m_verbosity >= 0) {
+      std::cerr << "OscillationEstimator::addReport: Value vector size differs"
+        << std::endl;
+    }
     return false;
   }
 
@@ -92,6 +100,10 @@ double OscillationEstimator::estimatePeriod() const
   std::vector<double> deviations;
   computeValueStatistics(means, deviations);
   if ((means.size() == 0) || (deviations.size() != means.size())) {
+    if (m_verbosity >= 0) {
+      std::cerr << "OscillationEstimator::estimatePeriod: No measurements"
+        << std::endl;
+    }
     return -1;
   }
   double maxDev = deviations[0];
@@ -101,11 +113,69 @@ double OscillationEstimator::estimatePeriod() const
       channel = i;
     }
   }
+  if (m_verbosity >= 1) {
+    std::cout << "OscillationEstimator::estimatePeriod: Using channel "
+      << channel << std::endl;
+  }
 
   //=======================================================
-  // @todo Finish
+  // Look through the values and make a vector of times at
+  // which they cross zero after an excursion of at least
+  // half a standard deviation from the mean.  Base the
+  // initial sign on the first entry.
+  bool beyondHSTD = false;
+  bool crossedZero = false;
+  double lastVal = m_reports.front().values[channel];
+  if (lastVal == 0) { lastVal = 1; }
+  std::vector<struct timeval> crossings;
+  std::list<DeviceThreadReport>::const_iterator rep;
+  double mean = means[channel];
+  double deviation = deviations[channel];
+  for (rep = m_reports.begin(); rep != m_reports.end(); rep++) {
+    // If we have not yet gone beyond the half standard
+    // deviation, see if we've done so and mark our state if so.
+    double val = rep->values[channel];
+    if (!beyondHSTD) {
+      if (fabs(val - mean) > deviation / 2) {
+        beyondHSTD = true;
+        crossedZero = false;
+      }
+    }
+    
+    // If we've already crossed zero, then we are waiting
+    // until we get beyond a half standard deviation, so we
+    // do nothing.
+    // Otherwise, see if we just crossed zero and store
+    // the time of the crossing and change our state
+    else if (!crossedZero) {
+      if (val * lastVal < 0) {
+        crossedZero = true;
+        beyondHSTD = false;
+        crossings.push_back(rep->sampleTime);
+      }
+    }
 
-  //XXX;
+    // In any case, store our last value
+    lastVal = val;
+  }
+  if (crossings.size() < 2) {
+    return -1;
+  }
+  if (m_verbosity >= 1) {
+    std::cout << "OscillationEstimator::estimatePeriod: Found "
+      << crossings.size() << " crossings" << std::endl;
+  }
+
+  //=======================================================
+  // Compute the median period between crossings and return
+  // it.
+  std::vector<double> durations;
+  for (size_t i = 1; i < crossings.size(); i++) {
+    durations.push_back(vrpn_TimevalDurationSeconds(
+      crossings[i], crossings[i - 1]));
+  }
+  std::sort(durations.begin(), durations.end());
+  return durations[durations.size() / 2];
 }
 
 void OscillationEstimator::computeValueStatistics(std::vector<double> &means,
@@ -140,6 +210,6 @@ void OscillationEstimator::computeValueStatistics(std::vector<double> &means,
   // Push back entries for each of the means and standard deviations.
   for (size_t i = 0; i < num; i++) {
     means.push_back(sums[i] / num);
-    deviations.push_back(squareSums[i] / num - means[i] * means[i]);
+    deviations.push_back(sqrt(squareSums[i] / num - means[i] * means[i]));
   }
 }

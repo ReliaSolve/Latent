@@ -20,6 +20,7 @@
 #include <iostream>
 #include <vector>
 #include <DeviceThreadVRPNTracker.h>
+#include <OscillationEstimator.h>
 
 // Global state.
 
@@ -83,7 +84,7 @@ int main(int argc, const char *argv[])
   }
 
   //-----------------------------------------------------------------
-  // Start accumulating reports, analyzing as we go.
+  // Start accumulating reports, analyzing and reporting as we go.
   if (g_verbosity > 0) {
     std::cout << "Oscillate the orientation of the HMD at the slowest rate "
       << "that causes image features that would normally be moving opposite "
@@ -94,8 +95,12 @@ int main(int argc, const char *argv[])
     std::cout << "Kill the program using ^C to exit." << std::endl;
   }
 
+  OscillationEstimator est;
   while (true) {
+    est.addReportsAndEstimatePeriod(device.GetReports());
 
+    // Only report at most every half second.
+    vrpn_SleepMsecs(500);
   }
 
   // We're done.  Shut down the threads and exit.

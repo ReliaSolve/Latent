@@ -25,7 +25,7 @@ class OscillationEstimator {
   public:
     /// @Brief construct an estimator of oscillation period.
     /// @param [in] Time window over which to estimate.
-    OscillationEstimator(double windowSeconds = 1.0);
+    OscillationEstimator(double windowSeconds = 1.0, int verbosity = -1);
     virtual ~OscillationEstimator();
 
     /// @brief Add reports from the device.
@@ -42,6 +42,7 @@ class OscillationEstimator {
   protected:
     //=======================================================
     // Keep track of our window of estimates
+    int m_verbosity;            //< How verbose to be in printing info?
     double m_windowSeconds;     //< Time window of measurements to keep
     bool m_windowReached;       //< Have we gotten enough samples to fill our window?
     std::list<DeviceThreadReport> m_reports; //< Our window full of reports.
