@@ -33,7 +33,7 @@ through [Amazon.com](http://smile.amazon.com/SainSmart-ATmega328P-CABLE-Included
 
 ### Connecting the devices
 
-<img align="right" src="./phototransistor_circuit.png">
+<img align="left" src="./phototransistor_circuit.png">
 Viewing the screen brightness can be done using an IR phototransistor
 purchased at Radio Shack, which also operated in the visible-light
 range (part number 276-0145, $1.99).  It can be hooked up according
