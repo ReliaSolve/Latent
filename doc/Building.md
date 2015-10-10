@@ -42,7 +42,8 @@ Circuit (see right). To produce voltages that changed over a range,
 a 500kΩ resistor (RL) can be placed in series with the phototransistor.
 To make the values be larger for brighter light, a common-collector
 configuration with the resistor placed between the transistor output
-and ground can be used.
+and ground can be used.  Plug the Vcc line into 5V power, the ground
+into GND, and the Vout into analog input 1.
 
 There is only one 5V power connection on the header, and two wires
 don't fit into it.  However, it is possible to use the 3.3V power
