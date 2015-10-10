@@ -85,4 +85,20 @@ X, Y, Z; next three are rotation), you would use the following command:
 
 (When the OSVR server is switched over to the IANA-specified OSVR port, the device name will change to com_osvr_Multiserver/OSVRHackerDevKit0@localhost:7728.)
 
+### Set-up
+
+**Scene:** The scene being displayed should have a brightness gradient, either
+one or more sudden transition from darker to lighter or one or more gradual
+transitions in brightness as the device is rotated.  These transitions in the
+light signal is what will be aligned with the orientation during the training
+session and used to determine the optimal time shift.
+
+**Interference:** Wrapping my hand around the three wires connected to the
+phototransistor causes a large oscillation in the signal that is not presento
+when it it simply leaning against the screen and being held in place by putty
+holding the wires together against a block on the desk.
+
+**Strobing displays:** OLED displays in particular, and others with LED
+back-lights, can have brightness strobing over the course of a single frame.
+
 

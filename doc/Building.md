@@ -38,7 +38,7 @@ Viewing the screen brightness can be done using an IR phototransistor
 purchased at Radio Shack, which also operated in the visible-light
 range (part number 276-0145, $1.99).  It can be hooked up according
 to the SHARP Optoelectronics Photodiode/Phototransistor Application
-Circuit (see right). To produce voltages that changed over a range,
+Circuit (see left). To produce voltages that changed over a range,
 a 500kΩ resistor (RL) can be placed in series with the phototransistor.
 To make the values be larger for brighter light, a common-collector
 configuration with the resistor placed between the transistor output
