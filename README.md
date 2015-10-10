@@ -6,6 +6,13 @@ Programs to test the latency of various VR devices and systems against
 a potentiometer that is read through an Arduino to provide a ground-truth,
 low-latency angular measurement.
 
+*vr_latency_tester/vrpn_streaming_arduino_filtered*:
+A version of the vrpn_streaming_arduino program that takes multiple readings
+of channels higher than 0 to filter out cross-talk that would otherwise
+come from using high-impedance inputs (like unbuffered phototransistors)
+on the higher-numbered inputs.  In particular, it is useful for the photo-
+transistor programs in vr_latency_tester.
+
 *test_arduino_latency*:
 Program to send commands to the Arduino to toggle the state of the
 digital output and measure how long it takes to see a change in the
