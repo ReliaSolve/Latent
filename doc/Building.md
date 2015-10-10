@@ -29,7 +29,7 @@ A prototype unit was built using an Arduino Uno board.  The particular
 board used was the SainSmart UNO ATmega328P, which was purchased
 through [Amazon.com](http://smile.amazon.com/SainSmart-ATmega328P-CABLE-Included-Arduino/dp/B006GX8IAY/ref=sr_1_5?s=electronics&ie=UTF8&qid=1422119284&sr=1-5&keywords=arduino+uno) for $17.69.
 
-![Arduino Uno](/arduino_uno.jpg)
+[Arduino Uno](./arduino_uno.jpg)
 
 
 ### Connecting the devices
@@ -42,7 +42,7 @@ Circuit (see right). To produce voltages that changed over a range,
 a 500kΩ resistor (RL) can be placed in series with the phototransistor.
 To make the values be larger for brighter light, a common-collector
 configuration with the resistor placed between the transistor output
-and ground can be used.  ![Photogransistor circuit](/phototransistor_circuit.png)
+and ground can be used.  [Phototransistor circuit](./phototransistor_circuit.png)
 
 ### Handling high-impedence circuits
 
