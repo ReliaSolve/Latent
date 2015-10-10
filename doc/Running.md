@@ -101,4 +101,30 @@ holding the wires together against a block on the desk.
 **Strobing displays:** OLED displays in particular, and others with LED
 back-lights, can have brightness strobing over the course of a single frame.
 
+## head_shake_latency_test
+
+The *head_shake_latency_test* program estimates the latency for very high-
+latency systems by observing the tracker reports while the viewer shakes
+the head-mounted display such that the image moves 180 degrees out of phase
+with the head rotation.  Running the program with no arguments provides
+a usage message:
+
+    Usage: C:\tmp\vs2015_64\vr_latency_tester\INSTALL\bin\head_shake_latency_test.exe[-verbosity N] TrackerName Sensor
+           -verbosity: How much info to print (default 2)
+           TrackerName: The Name of the tracker to use (e.g., com_osvr_Multiserver/OSVRHackerDevKit0@localhost)
+           Sensor: The sensor to read from (e.g., 0)
+
+For this to be effective, it must be possible to rotate the head-mounted
+display fast enough that the image gets out of phase; for latencies of
+around 100ms or less, it won't be possible to rotate the HMD fast enough
+or be certain enough of the phase difference between the motion and the
+display.
+
+The HMD can be rotated around any axis.  When there is periodic motion,
+the system estimates the period of motion of the largest-moving axis and
+reports the period of half a cycle in milliseconds.
+
+This program is run alongside the standard rendering program and is
+pointed to the VRPN tracker (and sensor ID) that is controlling the
+head.
 
