@@ -20,7 +20,82 @@ arguments provides a usage message:
            Test_channel: The channel that has the test input on it
 
 When using the device constructed according to the [build instructions](./Building.md),
+the potentiometer should be plugged into analog input 0 on the Arduino
+(*Potentiometer_channel* in the arguments) and a
+phototransistor circuit should be plugged into analog input 1 (*Test_channel* in
+the arguments).
 
+When the program is run, it will ask you to rotate the device slowly to the left and right
+within the bounds you will be using to test.  This is used to establish a mapping between
+the potentiometer value at a particular orientation and the VRPN sensor value at that
+orientation.  The speed of rotation should be slow enough to remove any latency from the
+system, presumably doing a left-and-right rotation over a period of about five seconds
+will be sufficient.  During the rotations, it reports the potentiometer values at which
+the rotation was reversed:
+
+    Waiting for reports from Arduino (you may need to move them):
+    Producing mapping between devices:
+      (Rotate slowly left and right 3 times)
+      Turned around at value 955
+      Turned around at value 798
+      Turned around at value 953
+      Turned around at value 798
+      Turned around at value 953
+      Turned around at value 798
+
+After the three rotations, the program reports the minimum and maximum potentiometer
+reading along with the light-sensing device reading associated with each endpoint.  It should
+be the case that there is a significant difference between the readings at the two
+ends.  (What is significant depends on the range of the particular sensor being used.)
+For example, the brightness read by a phototransistor curcuit viewing a Dell monitor may
+look like:
+
+    Min Arduino value 790 (device value 109)
+    Max Arduino value 963 (device value 222.957)
+      (Filled in 0 skipped values)
+    Measuring latency between devices:
+      (Rotate rapidly left and right 10 times)
+
+The program also reports how many values between the minimum and maximum were
+skipped -- received no readings -- and had to be filled in by linear interpolation.
+There should be a small number of these relative to the difference between the
+minumum and maximum Arduino value.
+
+As shown above, the program then asks you to rapidly rotate left and right between
+the bounds found above.  This rotation does not need to be at a constant speed or
+with a constant period.  The program will check time-domain shifts of all of the
+readings to find the most-consistent latency offset regardless of speed.  The speed
+should be fast enough to expose the latency, so should include rotations that are
+as fast as possible.
+
+Once again, the program will report the Arduino values where the rotation turned
+around, and it will then estimate and report the latency between the potentiometer
+readings and the brightness-reading device in milliseconds.
+
+### Examples
+
+**Windows OSVR HDK**: To connect to an Arduino on serial port COM5 (you can find
+out which port using the *Tools/Serial Port* menu in the Arduino programming tool)
+with the potentiometer plugged into analog input 0 and a phototransistor circuit
+plugged into analog input 1, you would use the following command:
+
+    arduino_inputs_latency_test.exe COM5 0 1
+
+### Set-up
+
+**Scene:** The scene being displayed should have a brightness gradient, either
+one or more sudden transition from darker to lighter or one or more gradual
+transitions in brightness as the device is rotated.  These transitions in the
+light signal is what will be aligned with the orientation during the training
+session and used to determine the optimal time shift.
+
+**Interference:** Wrapping my hand around the three wires connected to the
+phototransistor causes a large oscillation in the signal that is not presento
+when it it simply leaning against the screen and being held in place by putty
+holding the wires together against a block on the desk.
+
+**Strobing displays:** OLED displays in particular, and others with LED
+back-lights, can have brightness strobing over the course of a single frame.
 
 ## vrpn_device_latency_test
 
@@ -105,22 +180,6 @@ X, Y, Z; next three are rotation), you would use the following command:
 	vrpn_device_latency_test.exe COM5 0 tracker com_osvr_Multiserver/OSVRHackerDevKit0@localhost 5
 
 (When the OSVR server is switched over to the IANA-specified OSVR port, the device name will change to com_osvr_Multiserver/OSVRHackerDevKit0@localhost:7728.)
-
-### Set-up
-
-**Scene:** The scene being displayed should have a brightness gradient, either
-one or more sudden transition from darker to lighter or one or more gradual
-transitions in brightness as the device is rotated.  These transitions in the
-light signal is what will be aligned with the orientation during the training
-session and used to determine the optimal time shift.
-
-**Interference:** Wrapping my hand around the three wires connected to the
-phototransistor causes a large oscillation in the signal that is not presento
-when it it simply leaning against the screen and being held in place by putty
-holding the wires together against a block on the desk.
-
-**Strobing displays:** OLED displays in particular, and others with LED
-back-lights, can have brightness strobing over the course of a single frame.
 
 ## head_shake_latency_test
 
