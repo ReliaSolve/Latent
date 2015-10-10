@@ -3,6 +3,14 @@
 This document describes how to run the programs to operate
 the *Latent* test device for virtual-reality (VR) systems.
 
+Most of the programs use special hardware (described in the
+[build instructions](./Building.md)):
+* **arduino_inputs_latency_test**: Tests end-to-end system latency.
+* **vrpn_device_latency_test**: Tests motion-to-device-report latency.
+
+One program looks only at tracker reports:
+* **head_shake_latency_test**: Tests end-to-end system latency for systems with large latency.
+
 ## arduino_inputs_latency_test
 
 The *arduino_inputs_latency_test* program estimates the end-to-end latency
