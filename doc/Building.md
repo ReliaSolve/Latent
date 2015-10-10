@@ -51,6 +51,11 @@ output to drive the potentiometer, it merely reduces its voltage
 range.  There are two ground connectors, so it can get its own
 ground.  Its signal lead plugs into the analog in 0 header.
 
+**Noise:** Reduce the system's susceptibility to external electromagnetic
+interference by twisting the wires from the measurement devices
+around each other so that there is a small cross-section between
+them.
+
 ### Handling high-impedance circuits
 
 When I used two different input channels (0 and 1), I saw
