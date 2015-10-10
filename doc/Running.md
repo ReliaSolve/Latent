@@ -3,10 +3,31 @@
 This document describes how to run the programs to operate
 the *Latent* test device for virtual-reality (VR) systems.
 
+## arduino_inputs_latency_test
+
+The *arduino_inputs_latency_test* program estimates the end-to-end latency
+within a VR system: the latency between a potentiometer attached to an Arduino
+and a light sensor attached to the same Ardiuno.  Running the program with no
+arguments provides a usage message:
+
+    Usage: C:\tmp\vs2015_64\vr_latency_tester\INSTALL\bin\arduino_inputs_latency_test.exe Arduino_serial_port Potentiometer_channel Test_channel [-count N] [-arrivalTime]
+           -count: Repeat the test N times (default 200)
+           -arrivalTime: Use arrival time of messages (default is reported sampling time)
+           Arduino_serial_port: Name of the serial device to use to talk to the Arduino.  The Arduino must be running the vrpn_streaming_arduino program.
+                        (On windows, something like COM5)
+                        (On mac, something like /dev/tty.usbmodem1411)
+           Potentiometer_channel: The channel that has the potentiometer on it
+           Test_channel: The channel that has the test input on it
+
+When using the device constructed according to the [build instructions](./Building.md),
+
+
 ## vrpn_device_latency_test
 
-The *vrpn_device_latency_test* program estimates the latency between
-a potentiometer attached to an Arduino and a *vrpn_Analog* or *vrpn_Tracker*
+The *vrpn_device_latency_test* program estimates the device-related
+latency within a VR system:
+the latency between a potentiometer attached to an Arduino and the reports of 
+a *vrpn_Analog* or *vrpn_Tracker*
 device.  These devices can be either run with a local server (described
 by a configuration file) or connected to an externally-run server (using
 a full VRPN device name).  Running the program with no arguments provides
@@ -103,7 +124,7 @@ back-lights, can have brightness strobing over the course of a single frame.
 
 ## head_shake_latency_test
 
-The *head_shake_latency_test* program estimates the latency for very high-
+The *head_shake_latency_test* program estimates the end-to-end latency of very high-
 latency systems by observing the tracker reports while the viewer shakes
 the head-mounted display such that the image moves 180 degrees out of phase
 with the head rotation.  Running the program with no arguments provides
