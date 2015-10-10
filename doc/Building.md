@@ -44,6 +44,12 @@ To make the values be larger for brighter light, a common-collector
 configuration with the resistor placed between the transistor output
 and ground can be used.
 
+There is only one 5V power connection on the header, and two wires
+don't fit into it.  However, it is possible to use the 3.3V power
+output to drive the potentiometer, it merely reduces its voltage
+range.  There are two ground connectors, so it can get its own
+ground.  Its signal lead plugs into the analog in 0 header.
+
 ### Handling high-impedance circuits
 
 When I used two different input channels (0 and 1), I saw
