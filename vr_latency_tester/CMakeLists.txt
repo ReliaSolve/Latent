@@ -48,6 +48,8 @@ add_library(DeviceThread
     DeviceThreadVRPNTracker.h
     ArduinoComparer.cpp
     ArduinoComparer.h
+    OscillationEstimator.cpp
+    OscillationEstimator.h
 )
 target_link_libraries(DeviceThread
   ${VRPN_SERVER_LIBRARIES}
@@ -65,4 +67,10 @@ target_link_libraries(arduino_inputs_latency_test
   DeviceThread
 )
 install(TARGETS arduino_inputs_latency_test DESTINATION bin)
+
+add_executable(head_shake_latency_test head_shake_latency_test.cpp)
+target_link_libraries(head_shake_latency_test
+  DeviceThread
+)
+install(TARGETS head_shake_latency_test DESTINATION bin)
 
