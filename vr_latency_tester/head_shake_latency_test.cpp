@@ -28,7 +28,9 @@ unsigned g_verbosity = 2;       //< Larger numbers are more verbose
 
 void Usage(std::string name)
 {
-  std::cerr << "Usage: " << name << " TrackerName Sensor" << std::endl;
+  std::cerr << "Usage: " << name << "[-verbosity N] TrackerName Sensor" << std::endl;
+  std::cerr << "       -verbosity: How much info to print (default "
+    << g_verbosity << ")" << std::endl;
   std::cerr << "       TrackerName: The Name of the tracker to use (e.g., com_osvr_Multiserver/OSVRHackerDevKit0@localhost)" << std::endl;
   std::cerr << "       Sensor: The sensor to read from (e.g., 0)" << std::endl;
   exit(-1);
@@ -41,7 +43,13 @@ int main(int argc, const char *argv[])
   std::string trackerName;
   int trackerSensor;
   for (size_t i = 1; i < argc; i++) {
-    if (argv[i][0] == '-') {
+    if (argv[i] == std::string("-verbosity")) {
+      if (++i > argc) {
+        std::cerr << "Error: -verbosity parameter requires value" << std::endl;
+        Usage(argv[0]);
+      }
+      g_verbosity = atoi(argv[i]);
+    } else if (argv[i][0] == '-') {
         Usage(argv[0]);
     } else switch (++realParams) {
       case 1:
@@ -95,9 +103,23 @@ int main(int argc, const char *argv[])
     std::cout << "Kill the program using ^C to exit." << std::endl;
   }
 
-  OscillationEstimator est;
+  OscillationEstimator est(1.0, g_verbosity);
   while (true) {
-    est.addReportsAndEstimatePeriod(device.GetReports());
+    r = device.GetReports();
+    if (g_verbosity >= 3) {
+      std::cout << "Got " << r.size() << " reports" << std::endl;
+    }
+    if (g_verbosity >= 4) {
+      std::cout << "First report values:";
+      for (size_t i = 0; i < r[0].values.size(); i++) {
+        std::cout << " " << r[0].values[i];
+      }
+      std::cout << std::endl;
+    }
+    double period = est.addReportsAndEstimatePeriod(r);
+    if (period > 0) {
+      std::cout << "Median latency: " << period*1e3 << " ms" << std::endl;
+    }
 
     // Only report at most every half second.
     vrpn_SleepMsecs(500);

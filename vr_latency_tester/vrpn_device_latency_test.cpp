@@ -32,9 +32,11 @@ int g_arduinoChannel = 0;
 
 void Usage(std::string name)
 {
-  std::cerr << "Usage: " << name << " Arduino_serial_port Arduino_channel DEVICE_TYPE [Device_config_file|Device_device_name] Device_channel [-count N] [-arrivalTime]" << std::endl;
+  std::cerr << "Usage: " << name << "Arduino_serial_port Arduino_channel DEVICE_TYPE [Device_config_file|Device_device_name] Device_channel [-count N] [-arrivalTime] [-verbosity N]" << std::endl;
   std::cerr << "       -count: Repeat the test N times (default 200)" << std::endl;
   std::cerr << "       -arrivalTime: Use arrival time of messages (default is reported sampling time)" << std::endl;
+  std::cerr << "       -verbosity: How much info to print (default "
+    << g_verbosity << ")" << std::endl;
   std::cerr << "       Arduino_serial_port: Name of the serial device to use "
             << "to talk to the Arduino.  The Arduino must be running "
             << "the vrpn_streaming_arduino program." << std::endl;
@@ -84,6 +86,12 @@ int main(int argc, const char *argv[])
           << argv[i] << std::endl;
         Usage(argv[0]);
       }
+    } else if (argv[i] == std::string("-verbosity")) {
+      if (++i > argc) {
+        std::cerr << "Error: -verbosity parameter requires value" << std::endl;
+        Usage(argv[0]);
+      }
+      g_verbosity = atoi(argv[i]);
     } else if (argv[i] == std::string("-arrivalTime")) {
       arrivalTime = true;
     } else if (argv[i][0] == '-') {

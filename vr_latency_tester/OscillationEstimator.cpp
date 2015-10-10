@@ -113,7 +113,7 @@ double OscillationEstimator::estimatePeriod() const
       channel = i;
     }
   }
-  if (m_verbosity >= 1) {
+  if (m_verbosity >= 3) {
     std::cout << "OscillationEstimator::estimatePeriod: Using channel "
       << channel << std::endl;
   }
@@ -161,7 +161,7 @@ double OscillationEstimator::estimatePeriod() const
   if (crossings.size() < 2) {
     return -1;
   }
-  if (m_verbosity >= 1) {
+  if (m_verbosity >= 3) {
     std::cout << "OscillationEstimator::estimatePeriod: Found "
       << crossings.size() << " crossings" << std::endl;
   }
@@ -188,28 +188,33 @@ void OscillationEstimator::computeValueStatistics(std::vector<double> &means,
 
   // If we don't have any values in our reports, we also return
   // empty vectors.
-  size_t num = m_reports.begin()->values.size();
+  size_t num = m_reports.front().values.size();
   if (num == 0) { return; }
 
   // Sum up the values we'll need to keep to compute our statistics
   // in one pass.  Make vectors to store this information into.
-  std::vector<double> sums;
-  std::vector<double> squareSums;
+  std::vector<double> M2;
   for (size_t i = 0; i < num; i++) {
-    sums.push_back(0);
-    squareSums.push_back(0);
+    means.push_back(0);
+    M2.push_back(0);
   }
   std::list<DeviceThreadReport>::const_iterator rep;
+  int count = 0;
   for (rep = m_reports.begin(); rep != m_reports.end(); rep++) {
+    count++;
     for (size_t i = 0; i < num; i++) {
-      sums[i] += rep->values[i];
-      squareSums[i] += rep->values[i] * rep->values[i];
+      double delta = rep->values[i] - means[i];
+      means[i] += delta / count;
+      M2[i] += delta * delta;
     }
   }
 
   // Push back entries for each of the means and standard deviations.
   for (size_t i = 0; i < num; i++) {
-    means.push_back(sums[i] / num);
-    deviations.push_back(sqrt(squareSums[i] / num - means[i] * means[i]));
+    if (count < 2) {
+      deviations.push_back(0);
+    } else {
+      deviations.push_back(sqrt(M2[i] / (count-1)));
+    }
   }
 }
