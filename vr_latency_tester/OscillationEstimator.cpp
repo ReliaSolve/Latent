@@ -121,36 +121,35 @@ double OscillationEstimator::estimatePeriod() const
   //=======================================================
   // Look through the values and make a vector of times at
   // which they cross zero after an excursion of at least
-  // half a standard deviation from the mean.  Base the
+  // 1/4 a standard deviation from the mean.  Base the
   // initial sign on the first entry.
-  bool beyondHSTD = false;
+  bool beyondSTD = false;
   bool crossedZero = false;
   double lastVal = m_reports.front().values[channel];
-  if (lastVal == 0) { lastVal = 1; }
   std::vector<struct timeval> crossings;
   std::list<DeviceThreadReport>::const_iterator rep;
   double mean = means[channel];
   double deviation = deviations[channel];
   for (rep = m_reports.begin(); rep != m_reports.end(); rep++) {
-    // If we have not yet gone beyond the half standard
+    // If we have not yet gone beyond the quarter standard
     // deviation, see if we've done so and mark our state if so.
     double val = rep->values[channel];
-    if (!beyondHSTD) {
-      if (fabs(val - mean) > deviation / 2) {
-        beyondHSTD = true;
+    if (!beyondSTD) {
+      if (fabs(val - mean) > deviation / 4) {
+        beyondSTD = true;
         crossedZero = false;
       }
     }
     
     // If we've already crossed zero, then we are waiting
-    // until we get beyond a half standard deviation, so we
+    // until we get beyond a quarter standard deviation, so we
     // do nothing.
-    // Otherwise, see if we just crossed zero and store
+    // Otherwise, see if we just crossed the mean and store
     // the time of the crossing and change our state
     else if (!crossedZero) {
-      if (val * lastVal < 0) {
+      if ((val - mean) * (lastVal - mean) < 0) {
         crossedZero = true;
-        beyondHSTD = false;
+        beyondSTD = false;
         crossings.push_back(rep->sampleTime);
       }
     }
