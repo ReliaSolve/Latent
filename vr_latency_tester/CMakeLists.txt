@@ -91,5 +91,11 @@ if (OSVRRENDERMANAGER_FOUND)
       osvr::osvrClientKitCpp
     )
     install(TARGETS RenderManager_latency_test DESTINATION bin)
+
+    add_custom_command(TARGET RenderManager_latency_test POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${OSVRRenderManager_INCLUDE_DIR}/../bin/osvrRenderManager.dll"
+        "${CMAKE_BINARY_DIR}"
+      ) 
 endif()
 

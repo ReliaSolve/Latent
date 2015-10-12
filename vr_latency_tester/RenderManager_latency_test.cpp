@@ -212,11 +212,8 @@ int main(int argc, const char *argv[])
   // to get a baseline for dark.  Half a second is an arbitrary number that
   // should be larger than the latency present in the system.
   g_red = g_green = g_blue = 0;
-  vrpn_gettimeofday(&start, NULL);
-  do {
-    render->Render();
-    vrpn_gettimeofday(&now, NULL);
-  } while (vrpn_TimevalDurationSeconds(now, start) < 0.5);
+  render->Render();
+  vrpn_SleepMsecs(500);
   r = arduino.GetReports();
   if (r.size() == 0) {
     std::cerr << "Could not read Arduino value after dark rendering" << std::endl;
@@ -232,12 +229,9 @@ int main(int argc, const char *argv[])
   // Render a bright scene for half a second and then read the Arduino value
   // to get a baseline for bright.  Half a second is an arbitrary number that
   // should be larger than the latency present in the system.
-  g_red = g_green = g_blue = 0;
-  vrpn_gettimeofday(&start, NULL);
-  do {
-    render->Render();
-    vrpn_gettimeofday(&now, NULL);
-  } while (vrpn_TimevalDurationSeconds(now, start) < 0.5);
+  g_red = g_green = g_blue = 1;
+  render->Render();
+  vrpn_SleepMsecs(500);
   r = arduino.GetReports();
   if (r.size() == 0) {
     std::cerr << "Could not read Arduino value after bright rendering" << std::endl;
@@ -248,9 +242,53 @@ int main(int argc, const char *argv[])
   if (g_verbosity > 1) {
     std::cout << "Bright-screen photosensor value: " << bright << std::endl;
   }
+  double threshold = (dark + bright) / 2;
+  if (threshold - dark < 10) {
+    std::cerr << "Bright/dark difference insufficient: " << threshold - dark
+      << std::endl;
+    return 5;
+  }
+  if (g_verbosity > 1) {
+    std::cout << "Threshold photosensor value: " << threshold << std::endl;
+  }
 
   //-----------------------------------------------------------------
-  // @todo
+  // Do as many iterations as we're asked for, reporting the latency
+  // between when we asked for rendering and when we saw the screen
+  // brightness go from below halfway between dark and bright to
+  // above halfway between.
+  for (size_t i = 0; i < count; i++) {
+    // Render dark and wait long enough for it to settle.
+    g_red = g_green = g_blue = 0;
+    render->Render();
+    vrpn_SleepMsecs(500);
+    r = arduino.GetReports();
+
+    // Store the time, render bright, store the after-render time,
+    // and then wait for the bright to have finished.
+    g_red = g_green = g_blue = 1;
+    struct timeval pre_render;
+    vrpn_gettimeofday(&pre_render, NULL);
+    render->Render();
+    struct timeval post_render;
+    vrpn_gettimeofday(&post_render, NULL);
+    vrpn_SleepMsecs(500);
+    r = arduino.GetReports();
+
+    // Find where we cross the threshold from dark to bright and
+    // report latency to pre-render and post-render times.
+    for (size_t t = 1; t < r.size(); t++) {
+      if ((r[t - 1].values[g_arduinoChannel] < threshold) &&
+          (r[t].values[g_arduinoChannel] >= threshold)) {
+        std::cout << "Latency from pre-render: "
+          << vrpn_TimevalDurationSeconds(r[t].sampleTime, pre_render) * 1e3
+          << "ms, from post-render: "
+          << vrpn_TimevalDurationSeconds(r[t].sampleTime, post_render) * 1e3
+          << std::endl;
+        break;
+      }
+    }
+  }
 
   // We're done.  Shut down the threads and exit.
   return 0;
