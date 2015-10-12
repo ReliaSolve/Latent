@@ -228,6 +228,10 @@ int main(int argc, const char *argv[])
   }
 
   //-----------------------------------------------------------------
+  // Wait a bit for any DirectMode switching/power on to happen.
+  vrpn_SleepMsecs(1000);
+
+  //-----------------------------------------------------------------
   // Render a dark scene for half a second and then read the Arduino value
   // to get a baseline for dark.  Half a second is an arbitrary number that
   // should be larger than the latency present in the system.
