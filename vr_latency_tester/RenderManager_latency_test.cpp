@@ -24,6 +24,7 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include <algorithm>
 #include <DeviceThreadVRPNAnalog.h>
 #include <vrpn_Streaming_Arduino.h>
 
@@ -93,6 +94,25 @@ static vrpn_Analog *CreateStreamingServer(
   return new vrpn_Streaming_Arduino(deviceName, c,
                 g_arduinoPortName, num_channels);
 }
+
+// Helper function to compute and print the min, mean, and
+// max for a vector and print the results.
+void print_stats(std::string name, std::vector<double> vals)
+{
+  if (vals.size() > 0) {
+    double minVal = vals[0], maxVal = vals[0] , meanVal = vals[0];
+    for (size_t i = 1; i < vals.size(); i++) {
+      meanVal += vals[i];
+      if (vals[i] > maxVal) { maxVal = vals[i]; }
+      if (vals[i] < minVal) { minVal = vals[i]; }
+    }
+    meanVal /= vals.size();
+    std::cout << name << " min: " << minVal << ", mean " << meanVal
+      << ", max " << maxVal
+      << ", range " << maxVal - minVal << std::endl;
+  }
+}
+
 
 int main(int argc, const char *argv[])
 {
@@ -257,6 +277,7 @@ int main(int argc, const char *argv[])
   // between when we asked for rendering and when we saw the screen
   // brightness go from below halfway between dark and bright to
   // above halfway between.
+  std::vector<double> pre_delays_ms, post_delays_ms;
   for (size_t i = 0; i < count; i++) {
     // Render dark and wait long enough for it to settle.
     g_red = g_green = g_blue = 0;
@@ -280,16 +301,26 @@ int main(int argc, const char *argv[])
     for (size_t t = 1; t < r.size(); t++) {
       if ((r[t - 1].values[g_arduinoChannel] < threshold) &&
           (r[t].values[g_arduinoChannel] >= threshold)) {
-        std::cout << "Latency from pre-render: "
-          << vrpn_TimevalDurationSeconds(r[t].sampleTime, pre_render) * 1e3
-          << "ms, from post-render: "
-          << vrpn_TimevalDurationSeconds(r[t].sampleTime, post_render) * 1e3
-          << std::endl;
+        if (g_verbosity > 1) {
+          pre_delays_ms.push_back(vrpn_TimevalDurationSeconds(r[t].sampleTime, pre_render) * 1e3);
+          post_delays_ms.push_back(vrpn_TimevalDurationSeconds(r[t].sampleTime, post_render) * 1e3);
+          std::cout << "Latency from pre-render: "
+            << pre_delays_ms[i]
+            << "ms, from post-render: "
+            << post_delays_ms[i]
+            << std::endl;
+        }
         break;
       }
     }
   }
 
+  //-----------------------------------------------------------------
+  // Compute and report statistics on the measurements.
+  print_stats("Pre-delay (ms)", pre_delays_ms);
+  print_stats("Post-delay (ms)", post_delays_ms);
+
+  //-----------------------------------------------------------------
   // We're done.  Shut down the threads and exit.
   return 0;
 }
