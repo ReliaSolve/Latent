@@ -235,6 +235,8 @@ int main(int argc, const char *argv[])
   // Render a dark scene for half a second and then read the Arduino value
   // to get a baseline for dark.  Half a second is an arbitrary number that
   // should be larger than the latency present in the system.
+  // Then render another dark scene right at the end so our vertical
+  // retrace timing should be correct for the bright scene.
   g_red = g_green = g_blue = 0;
   render->Render();
   vrpn_SleepMsecs(500);
@@ -248,11 +250,14 @@ int main(int argc, const char *argv[])
   if (g_verbosity > 1) {
     std::cout << "Dark-screen photosensor value: " << dark << std::endl;
   }
+  render->Render();
 
   //-----------------------------------------------------------------
   // Render a bright scene for half a second and then read the Arduino value
   // to get a baseline for bright.  Half a second is an arbitrary number that
   // should be larger than the latency present in the system.
+  // Then render another bright scene right at the end so our vertical
+  // retrace timing should be correct for the bright scene.
   g_red = g_green = g_blue = 1;
   render->Render();
   vrpn_SleepMsecs(500);
@@ -275,6 +280,7 @@ int main(int argc, const char *argv[])
   if (g_verbosity > 1) {
     std::cout << "Threshold photosensor value: " << threshold << std::endl;
   }
+  render->Render();
 
   //-----------------------------------------------------------------
   // Do as many iterations as we're asked for, reporting the latency
@@ -284,13 +290,18 @@ int main(int argc, const char *argv[])
   std::vector<double> pre_delays_ms, post_delays_ms;
   for (size_t i = 0; i < count; i++) {
     // Render dark and wait long enough for it to settle.
+    // As above, do another render after the sleep so we're running
+    // the sytem as if it were rendering every frame.
     g_red = g_green = g_blue = 0;
     render->Render();
     vrpn_SleepMsecs(500);
     r = arduino.GetReports();
+    render->Render();
 
     // Store the time, render bright, store the after-render time,
     // and then wait for the bright to have finished.
+    // As above, do another render after the sleep so we're running
+    // the sytem as if it were rendering every frame.
     g_red = g_green = g_blue = 1;
     struct timeval pre_render;
     vrpn_gettimeofday(&pre_render, NULL);
@@ -299,6 +310,7 @@ int main(int argc, const char *argv[])
     vrpn_gettimeofday(&post_render, NULL);
     vrpn_SleepMsecs(500);
     r = arduino.GetReports();
+    render->Render();
 
     // Find where we cross the threshold from dark to bright and
     // report latency to pre-render and post-render times.
@@ -306,8 +318,13 @@ int main(int argc, const char *argv[])
       if ((r[t - 1].values[g_arduinoChannel] < threshold) &&
           (r[t].values[g_arduinoChannel] >= threshold)) {
         if (g_verbosity > 1) {
-          pre_delays_ms.push_back(vrpn_TimevalDurationSeconds(r[t].sampleTime, pre_render) * 1e3);
-          post_delays_ms.push_back(vrpn_TimevalDurationSeconds(r[t].sampleTime, post_render) * 1e3);
+          if (arrivalTime) {
+            pre_delays_ms.push_back(vrpn_TimevalDurationSeconds(r[t].arrivalTime, pre_render) * 1e3);
+            post_delays_ms.push_back(vrpn_TimevalDurationSeconds(r[t].arrivalTime, post_render) * 1e3);
+          } else {
+            pre_delays_ms.push_back(vrpn_TimevalDurationSeconds(r[t].sampleTime, pre_render) * 1e3);
+            post_delays_ms.push_back(vrpn_TimevalDurationSeconds(r[t].sampleTime, post_render) * 1e3);
+          }
           std::cout << "Latency from pre-render: "
             << pre_delays_ms[i]
             << "ms, from post-render: "
