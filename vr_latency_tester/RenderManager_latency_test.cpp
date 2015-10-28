@@ -28,7 +28,7 @@
 #include <DeviceThreadVRPNAnalog.h>
 #include <vrpn_Streaming_Arduino.h>
 
-#include <RenderManager.h>
+#include <osvr/RenderKit/RenderManager.h>
 // Needed for render buffer calls.  OSVR will have called glewInit() for us
 // when we open the display.
 #ifdef _WIN32
@@ -38,7 +38,7 @@
 #include <GL/GL.h>
 
 //This must come after we include <GL/GL.h> so its pointer types are defined.
-#include <GraphicsLibraryOpenGL.h>
+#include <osvr/RenderKit/GraphicsLibraryOpenGL.h>
 
 // Global state.
 unsigned g_verbosity = 2;       //< Larger numbers are more verbose
@@ -50,7 +50,7 @@ GLfloat g_blue = 0;   //< Clear color
 
 void Usage(std::string name)
 {
-  std::cerr << "Usage: " << name << " [-count N] [-arrivalTime] Arduino_serial_port Photosensor_channel DISPLAY_CONFIG RENDERMANAGER_CONFIG" << std::endl;
+  std::cerr << "Usage: " << name << " [-count N] [-arrivalTime] Arduino_serial_port Photosensor_channel" << std::endl;
   std::cerr << "       -count: Repeat the test N times (default 10)" << std::endl;
   std::cerr << "       -arrivalTime: Use arrival time of messages (default is reported sampling time)" << std::endl;
   std::cerr << "       Arduino_serial_port: Name of the serial device to use "
@@ -59,8 +59,6 @@ void Usage(std::string name)
   std::cerr << "                    (On windows, something like COM5)" << std::endl;
   std::cerr << "                    (On mac, something like /dev/tty.usbmodem1411)" << std::endl;
   std::cerr << "       Photosensor_channel: The channel that has the photosensor on it" << std::endl;
-  std::cerr << "       DISPLAY_CONFIG: The name of the RenderManager display configuration .json file" << std::endl;
-  std::cerr << "       RENDERMANAGER_CONFIG: The name of the RenderManager configuration .json file" << std::endl;
   exit(-1);
 }
 
@@ -120,8 +118,6 @@ int main(int argc, const char *argv[])
   size_t realParams = 0;
   int count = 10;
   bool arrivalTime = false;
-  std::string displayConfigJsonFileName;
-  std::string pipelineConfigJsonFileName;
 
   for (size_t i = 1; i < argc; i++) {
     if (argv[i] == std::string("-count")) {
@@ -146,17 +142,11 @@ int main(int argc, const char *argv[])
       case 2:
         g_arduinoChannel = atoi(argv[i]);
         break;
-      case 3:
-        displayConfigJsonFileName = argv[i];
-        break;
-      case 4:
-        pipelineConfigJsonFileName = argv[i];
-        break;
       default:
         Usage(argv[0]);
     }
   }
-  if (realParams != 4) {
+  if (realParams != 2) {
     Usage(argv[0]);
   }
 
@@ -208,8 +198,7 @@ int main(int argc, const char *argv[])
   osvr::clientkit::ClientContext context(
     "com.reliasolve.RenderManagerLatencyTest");
   osvr::renderkit::RenderManager *render =
-    osvr::renderkit::createRenderManager(context.get(),
-      displayConfigJsonFileName, pipelineConfigJsonFileName);
+    osvr::renderkit::createRenderManager(context.get(),"OpenGL");
   if ((render == nullptr) ||
     (!render->doingOkay())) {
     std::cerr << "Could not create RenderManager" << std::endl;
