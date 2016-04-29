@@ -91,3 +91,62 @@ the voltage to come up from 0 over about 1ms; this at least had
 a constant scaling factor on the values being read (as opposed
 to following a channel with varying voltage).
 
+## Constructing the unit
+
+The potentiometer needs to be installed inside a stand that can rotate
+with an HMD on top of it, so that the angle of the potentiometer can
+be compared to the tracking data and to the images on the screen.  I
+made a prototype stand using two pieces of scrap wood, as seen below.
+
+<img src="./tester.png">
+
+Before starting, note the wiring on the potentiometer.  I used red
+wires for the outer two connectors and green for the center.
+This lets me know that the green wire goes to the analog input and
+the other two to the power supply voltage and ground.
+
+I found a drill bit that was slightly narrower than the knob on the
+top of the potentiometer and used a drill press to make a hole in
+the center of the top board.  Then I found a bit that was slightly
+larger than the screw threads on the potentiometer and widenend the
+bottom part of the hole so that it would fit.
+
+The potentiometer can be mounted in the top board such that when
+it is all together the center location has the boards aligned.
+(On a round base, this would not be needed.)
+By sticking the potentiometer into the hole (friction fit), I was
+able to measure how far it stuck out the bottom of the board and
+marked this depth on the side of the lower board.
+
+Leaving a bit of extra space (maybe 1/32") for epoxy to form around
+the base, I used a router table with a 3/4" bit to carve a channel
+from slightly past the center of the bottom board to one edge, making
+a place for the potentiometer to sit and for the wires to exit.
+
+After checking the fit, I mixed epoxy and placed it in the routed
+channel around where the potentiometer would sit, making sure not
+to get any up around the top of the channel (to avoid sticking the
+top board to the bottom one).  I then used the top board to press
+the potentiometer into the epoxy and left it to set up overnight.
+
+After using the board for a while, I noticed that the wiring
+tended to get caught on the top board.  A wiring staple hastily
+applied serves to keep the wiring marshalled, along with some
+adhesive putty.  Not pretty, but serviceable.
+
+## Connecting the devices
+
+The image below shows the wiring.
+
+<img src="./wired.png">
+
+The leads from the potentiometer come from below in the image.
+The green wire attaches to analog
+input 0.  The two red wires attach to one of the ground pins and
+to the 3V power lead (leaving the 5V lead available for the photo
+transistor); the two red wires can attach in either polarity.
+
+The leads from the phototransistor come in from the top.  The
+green lead (attached to Vout) attaches to analog input 1.  The
+red wire (Vcc) attaches to the 5V power supply and the black
+lead (ground) attaches to one of the ground pins.

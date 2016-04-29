@@ -28,7 +28,7 @@ unsigned g_verbosity = 2;       //< Larger numbers are more verbose
 
 void Usage(std::string name)
 {
-  std::cerr << "Usage: " << name << "[-verbosity N] TrackerName Sensor" << std::endl;
+  std::cerr << "Usage: " << name << " [-verbosity N] TrackerName Sensor" << std::endl;
   std::cerr << "       -verbosity: How much info to print (default "
     << g_verbosity << ")" << std::endl;
   std::cerr << "       TrackerName: The Name of the tracker to use (e.g., com_osvr_Multiserver/OSVRHackerDevKit0@localhost)" << std::endl;
