@@ -45,6 +45,12 @@ configuration with the resistor placed between the transistor output
 and ground can be used.  Plug the Vcc line into 5V power, the ground
 into GND, and the Vout into analog input 1.
 
+The potentiometer used in the prototype unit had a 10kOhm resistance.
+**Be careful** to select a potentiometer that does not have any "play"
+(hysteresis) when it is rotated.  One user got very inconsistent
+latency results when they used a potentiometer that had such slack
+in it.  The one used in the prototype had no such play.
+
 There is only one 5V power connection on the header, and two wires
 don't fit into it.  However, it is possible to use the 3.3V power
 output to drive the potentiometer, it merely reduces its voltage
