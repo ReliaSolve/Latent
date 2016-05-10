@@ -50,6 +50,9 @@ The potentiometer used in the prototype unit had a 10kOhm resistance.
 (hysteresis) when it is rotated.  One user got very inconsistent
 latency results when they used a potentiometer that had such slack
 in it.  The one used in the prototype had no such play.
+**Be careful** to twist the wires around each other and to route
+them away from the circuitry on the Arduino to get to the connector,
+so that they do not pick up noise.
 
 There is only one 5V power connection on the header, and two wires
 don't fit into it.  However, it is possible to use the 3.3V power
